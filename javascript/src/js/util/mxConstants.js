@@ -2005,11 +2005,18 @@
 	ARROW_OVAL: 'oval',
 
 	/**
-	 * Variable: ARROW_DIAMOND
+	 * Variable: 
 	 * 
 	 * Constant for diamond arrow markers.
 	 */
 	ARROW_DIAMOND: 'diamond',
+
+	/**
+	 * Variable: 
+	 * 
+	 * Constant for extends arrow markers.
+	 */
+	ARROW_EXTEND: 'extend',
 
 	/**
 	 * Variable: ARROW_DIAMOND_THIN
