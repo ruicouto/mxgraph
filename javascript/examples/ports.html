@@ -7,7 +7,7 @@
 -->
 <html>
 <head>
-	<title>Ports example</title>
+	<title>Editor</title>
 	<style type="text/css" media="screen">
 		BODY {
 			font-family: Arial;
@@ -87,7 +87,7 @@
 				//allow loops
 				graph.setAllowLoops(true);
 
-				// Uses the port icon while connections are previewed
+				// Show icon while connections are previewed
 				graph.connectionHandler.getConnectImage = function(state) {
 					return new mxImage(state.style[mxConstants.STYLE_IMAGE], 16, 16);
 				};
@@ -259,29 +259,7 @@
 				mxUtils.writeln(hints, '- Move the mouse over a cell to see a tooltip');
 				mxUtils.writeln(hints, '- Click and drag a vertex to move and connect');
 				document.body.appendChild(hints);
-
-				//association style - not working properly
-				var btn = document.createElement('button');
-				btn.onclick = function(){
-					style = graph.getStylesheet().getDefaultEdgeStyle();					
-					style[mxConstants.STYLE_ENDARROW] = mxConstants.ARROW_CLASSIC;
-				};
-				btn.innerHTML = "Association"
-				btn.style.width = '45px';
-				btn.style.height = '40px';
-				sidebar.appendChild(btn);
-
-				//extends style - not working properly
-				btn = document.createElement('button');
-				btn.onclick = function(){
-					style = graph.getStylesheet().getDefaultEdgeStyle();					
-					style[mxConstants.STYLE_ENDARROW] = mxConstants.ARROW_EXTEND;
-				};
-				btn.innerHTML = "Extends"
-				btn.style.width = '45px';
-				btn.style.height = '40px';
-				sidebar.appendChild(btn);
-
+				
 				// Creates a new DIV that is used as a toolbar and adds
 				// toolbar buttons.
 				var spacer = document.createElement('div');
@@ -382,6 +360,57 @@
 			graph.popupMenuHandler.factoryMethod = function(menu, cell, evt) {
 				return createPopupMenu(graph, menu, cell, evt);
 			};
+
+
+
+			// Needs to set a flag to check for dynamic style changes,
+			// that is, changes to styles on cells where the style was
+			// not explicitely changed using mxStyleChange
+			graph.getView().updateStyle = true;
+			
+			// Overrides mxGraphModel.getStyle to return a specific style
+			// for edges that reflects their target terminal (in this case
+			// the strokeColor will be equal to the target's fillColor).
+			var previous = graph.model.getStyle;
+			
+			//Dynamic styles
+			graph.model.getStyle = function(cell) {
+				if (cell != null) {
+					var style = previous.apply(this, arguments);
+					
+					if (this.isEdge(cell)) {
+						
+						var target = this.getTerminal(cell, false);
+						var source = this.getTerminal(cell, true);
+						style = 'strokeWidth=2;strokeColor=black;';
+
+						if (target != null) {
+							if(target.k && target.k == "port" || 
+							   source.k && source.k == "port" ) {
+								var state = graph.getView().getState(target);
+								style += ';endArrow=dash';
+								
+							} else {
+								if(cell.value && cell.value=="extends") {
+									style += ';endArrow=extend';
+								} else {
+									style += ';endArrow=block';
+								}
+							}
+						}
+					}
+					else if (this.isVertex(cell)) {
+						//vertexes
+					}
+					return style;
+				}
+				return null;
+			};
+			
+			/* //event for edge created
+			//https://jgraph.github.io/mxgraph/docs/js-api/files/handler/mxConnectionHandler-js.html
+			graphComponent.getConnectionHandler().addListener(mxEvent.CONNECT, new mxIEventListener()\n{\n  public void invoke(Object sender, mxEventObject evt)\n  {\n    System.out.println("edge="+evt.getProperty("cell"));\n  }\n});\n
+			*/
 		};
 
 		/**
@@ -389,42 +418,119 @@
 		 */
 		function createPopupMenu(graph, menu, cell, evt) {
 			if (cell != null) {
-				console.log(cell.geometry.x);
-				console.log(evt.layerX);
+				if(cell.k && cell.k === "port") {
+					menu.addItem('Remove', 'images/delete2.png', function() {
 
-				menu.addItem('Add port', 'images/add.png', function() {
+					graph.model.beginUpdate();
+					graph.removeCells([cell]);
+					graph.model.endUpdate();
+				});
+				} else {
+					menu.addItem('Add port Right', 'images/right.png', function() {
+						if(!cell.cr) {
+							cell.cr = 0;
+						}
+						var cc=cell.cr;
+						cc = cell.cr;
+						cell.cr++;
+						graph.model.beginUpdate();
+						var port = graph.insertVertex(cell, "id", 'Trigger', 1, 0.1 + 0.2*cc, 16, 16,
+								'image=editors/images/rectangle.gif;align=right;imageAlign=right;', true);
+						graph.insertVertex(port, "id", 'Trigger', 1, 0.1 + 0.2*cc, 0, 0,
+							'align=right;imageAlign=right;resizable=0;dropEnabled=0', false);
+						port.geometry.offset = new mxPoint(-6, -8);
+						port.k = "port";
+						graph.model.setValue(port, "Test");
+						console.log(port);
+						graph.model.endUpdate();
+					});
+
+
+				menu.addItem('Add port Left', 'images/left.png', function() {
+
+
 					if(!cell.cl) {
 						cell.cl = 0;
 					}
+
+					var cc=cell.cl;
+					
+					cell.cl++;
+					x = 0;
+					y = 0.1 + 0.2*cc;
+					
+
 					graph.model.beginUpdate();
-					var port = graph.insertVertex(cell, null, 'Trigger', 0, 0.25*(cell.cl/1), 16, 16,
-							'port;image=editors/images/rectangle.gif;align=right;imageAlign=right;spacingRight=18', true);
+
+					var port = graph.insertVertex(cell, null, 'Trigger', x, y, 16, 16,
+							'port;image=editors/images/rectangle.gif;align=right;imageAlign=right;', true);
 					port.geometry.offset = new mxPoint(-6, -8);
+					port.k = "port";
+
 					v1 = cell;
 					graph.model.endUpdate();
-
-						
-					/*var port = graph.insertVertex(v1, null, 'Input', 0, 0.75, 16, 16,
-							'port;image=editors/images/overlays/check.png;align=right;imageAlign=right;spacingRight=18', true);
-					port.geometry.offset = new mxPoint(-6, -4);
-					
-					
-					var port = graph.insertVertex(v1, null, 'Error', 1, 0.25, 16, 16,
-							'port;image=editors/images/overlays/error.png;spacingLeft=18', true);
-					port.geometry.offset = new mxPoint(-8, -8);
-					
-					var port = graph.insertVertex(v1, null, 'Result', 1, 0.75, 16, 16,
-							'port;image=editors/images/overlays/information.png;spacingLeft=18', true);
-					port.geometry.offset = new mxPoint(-8, -4);*/
-
-					cell.cl++;
-					
-					console.log(cell.cl);
 				});
+
+				menu.addItem('Add port Top', 'images/up.png', function() {
+						
+					if(!cell.ct) {
+						cell.ct = 0;
+					}
+
+					var cc=cell.ct;
+					
+					//add on top
+					
+						cc = cell.ct;
+						cell.ct++;
+						var x = 0.1 + 0.2*cc;
+						var y = 0;
+					
+
+					graph.model.beginUpdate();
+
+					var port = graph.insertVertex(cell, null, 'Trigger', x, y, 16, 16,
+							'port;image=editors/images/rectangle.gif;align=right;imageAlign=right;', true);
+					port.geometry.offset = new mxPoint(-6, -8);
+					port.k = "port";
+
+					v1 = cell;
+					graph.model.endUpdate();
+				});
+
+
+				menu.addItem('Add port Bottom', 'images/down.png', function() {
+					
+					if(!cell.cb) {
+						cell.cb = 0;
+					}
+
+					var cc=cell.cl;
+					//add on bottom
+					cc = cell.cb;
+					cell.cb++;
+					x = 0.1 + 0.2*cc;
+					y = 1;
+					
+					graph.model.beginUpdate();
+
+					var port = graph.insertVertex(cell, null, 'Trigger', x, y, 16, 16,
+							'port;image=editors/images/rectangle.gif;align=right;imageAlign=right;', true);
+					port.geometry.offset = new mxPoint(-6, -8);
+					port.k = "port";
+
+					v1 = cell;
+					graph.model.endUpdate();
+				});
+				}
+				
 			}
 		};
 		
 		
+		/**
+		 * Add button to the toolbar
+		 */
 		function addToolbarButton(editor, toolbar, action, label, image, isTransparent)
 		{
 			var button = document.createElement('button');
@@ -745,14 +851,14 @@
 			graph.getStylesheet().putCellStyle('group', style);
 			
 			style = new Object();
-			style[mxConstants.STYLE_SHAPE] = mxConstants.SHAPE_IMAGE;
+			/*style[mxConstants.STYLE_SHAPE] = mxConstants.SHAPE_IMAGE;
 			style[mxConstants.STYLE_FONTCOLOR] = '#774400';
 			style[mxConstants.STYLE_PERIMETER] = mxPerimeter.RectanglePerimeter;
 			style[mxConstants.STYLE_PERIMETER_SPACING] = '6';
 			style[mxConstants.STYLE_ALIGN] = mxConstants.ALIGN_LEFT;
 			style[mxConstants.STYLE_VERTICAL_ALIGN] = mxConstants.ALIGN_MIDDLE;
-			style[mxConstants.STYLE_FONTSIZE] = '10';
-			style[mxConstants.STYLE_FONTSTYLE] = 2;
+			//style[mxConstants.STYLE_FONTSIZE] = '10';
+			style[mxConstants.STYLE_FONTSTYLE] = 2;*/
 			style[mxConstants.STYLE_IMAGE_WIDTH] = '16';
 			style[mxConstants.STYLE_IMAGE_HEIGHT] = '16';
 			graph.getStylesheet().putCellStyle('port', style);
@@ -762,7 +868,8 @@
 			style[mxConstants.STYLE_LABEL_BACKGROUNDCOLOR] = '#FFFFFF';
 			style[mxConstants.STYLE_STROKEWIDTH] = '2';
 			style[mxConstants.STYLE_ROUNDED] = true;
-			style[mxConstants.STYLE_ENDARROW] = mxConstants.ARROW_EXTEND;			
+			style[mxConstants.STYLE_STROKECOLOR] = "#000";
+			style[mxConstants.STYLE_ENDARROW] = "none";
 		};
 	</script>
 </head>
