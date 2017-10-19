@@ -33,6 +33,8 @@
 
 
 		var _graph;
+		var serial=0;
+
 
 		// Program starts here. Creates a sample graph in the
 		// DOM node with the specified ID. This function is invoked
@@ -212,7 +214,7 @@
 				// be as follows:
 				// addSidebarIcon(graph, sidebar, 'Website', 'images/icons48/earth.png');
 				addSidebarIcon(graph, sidebar,
-					'Sig'//+
+					'Component'//+
 					//'<img src="images/icons48/earth.png" width="48" height="48">'+
 					//'<br>'+
 					//'<a href="http://www.jgraph.com" target="_blank">Browse</a>'
@@ -406,7 +408,7 @@
 							});
 						}
 
-						if (target != null) {
+						if (target != null && source !=null) {
 							if(target.k && target.k == "port" || 
 							   source.k && source.k == "port" || dash) {
 								var state = graph.getView().getState(target);
@@ -477,15 +479,43 @@
 		};
 
 
-		function addPort(graph, cell, x, y) {
+		function addPort(graph, cell, x, y,pos=+'l') {
+			if(pos==='l') {
+				if(!cell.cl) {
+					cell.cl = 0;
+				}						
+				cell.cl++;
+			}
+			if(pos==='r') {
+				if(!cell.cr) {
+					cell.cr = 0;
+				}						
+				cell.cr++;
+			}
+			if(pos==='b') {
+				if(!cell.cb) {
+					cell.cb = 0;
+				}						
+				cell.cb++;
+			}
+			if(pos==='t') {
+				if(!cell.ct) {
+					cell.ct = 0;
+				}						
+				cell.ct++;
+			}
+			
 			graph.model.beginUpdate();
-			var port = graph.insertVertex(cell, "id", null, x, y, 16, 16,
+			serial++;
+			var s = serial;
+			var port = graph.insertVertex(cell, "port"+serial, null, x, y, 16, 16,
 				'image=editors/images/rectangle.gif;align=right;imageAlign=right;verticalLabelPosition=bottom;verticalAlign=top', true);
-			var lbl = graph.insertVertex(port, "id", 'P', x, y, 0, 0,
+			var lbl = graph.insertVertex(port, "lbl"+serial, 'P'+serial, x, y, 0, 0,
 				'align=right;imageAlign=right;resizable=0;dragEnabled=0;', false);
 			lbl.k = 'lbl';
 			port.geometry.offset = new mxPoint(-6, -8);
 			port.k = "port";
+			port.pos=pos;
 			graph.model.endUpdate();
 		}
 
@@ -502,34 +532,16 @@
 				});
 				} else {
 					menu.addItem('Add port Right', 'images/right.png', function() {
-						if(!cell.cr) {
-							cell.cr = 0;
-						}
-						cell.cr++;
-						addPort(graph, cell, 1,0.1 + 0.2*(cell.cr-1));
+						addPort(graph, cell, 1,0.1 + 0.2*(cell.cr-1),'r');
 					});
-
 					menu.addItem('Add port Left', 'images/left.png', function() {
-						if(!cell.cl) {
-							cell.cl = 0;
-						}						
-						cell.cl++;
-						addPort(graph, cell, 0, 0.1 + 0.2*(cell.cl-1));
+						addPort(graph, cell, 0, 0.1 + 0.2*(cell.cl-1),'l');
 					});
 					menu.addItem('Add port Top', 'images/up.png', function() {
-						if(!cell.ct) {
-							cell.ct = 0;
-						}
-						cell.ct++;
-						addPort(graph, cell, 0.1 + 0.2*(cell.ct-1), 0);
+						addPort(graph, cell, 0.1 + 0.2*(cell.ct-1), 0,'t');
 					});
-
 					menu.addItem('Add port Bottom', 'images/down.png', function() {
-						if(!cell.cb) {
-							cell.cb = 0;
-						}
-						cell.cb++;
-						addPort(graph, cell, 0.1 + 0.2*(cell.cb-1), 1);
+						addPort(graph, cell, 0.1 + 0.2*(cell.cb-1), 1,'b');
 					});
 				}
 				
@@ -573,14 +585,19 @@
 		 * Export the model to EMDL json
 		 */
 		function exportToJson(editor, cell) {
+			//create the representation
 			var json = {};
 
+			//add meta information
 			json.descriptor = {};
 			json.descriptor.file_type="emdl";
 			json.descriptor.version="2.0";
 			json.descriptor.description="emucharts model";
 			json.descriptor.chart_name="none";
+			json.descriptor.serial=serial;
 
+
+			//initialize chart variables
 			json.chart = {};
 			json.chart.states=[];
 			json.chart.transitions=[];
@@ -588,30 +605,83 @@
 			json.chart.variables=[];
 			json.chart.constants=[];
 			json.chart.datatypes=[];
+
+	
 			
 			var model = _graph.getModel();
 
 			Object.keys(model.cells).forEach(function (k) {
 				if(model.cells[k].value && !model.cells[k].edge) {
 					console.log("Vertex:")
-					console.log(model.cells[k]);
+					var tcell = model.cells[k];
+					console.log(tcell);
 					var s = {};
-					s.id=model.cells[k].value;
-					s.x = model.cells[k].geometry.x;
-					s.y = model.cells[k].geometry.y;
+					s.id=tcell.value;
+					if(tcell.parent && tcell.parent.k && tcell.parent.k==='port') {
+						s.id = tcell.parent.id;
+					}
+					s.value=tcell.value;
+					s.x = tcell.geometry.x;
+					s.y = tcell.geometry.y;
+					s.width = tcell.geometry.width;
+					s.height = tcell.geometry.height;
+
+					if(tcell.parent.k && tcell.parent.k==='port') {
+						s.kind = 'port';
+						s.position = tcell.parent.pos;
+					}
+
+					//set parent
+					if(tcell.parent) {
+						if(tcell.parent.k && tcell.parent.k === 'port') {
+							//parent of port label is a rectangle with no value
+							s.parent=tcell.parent.parent.value;
+							console.log("is port");
+						} else {
+							s.parent=tcell.parent.value;
+						}
+					}
+					
+					//Check children
+					if(tcell.children) {
+						s.children=[];
+						tcell.children.forEach(function (c) {
+							if(c.value) {
+								s.children.push(c.value);
+							}
+							if(c.k && c.k==='port') {
+								s.children.push(c.id);
+							}
+						});
+					}
+					
 					json.chart.states.push(s);
 				}
+
+				//edges
 				if(model.cells[k].edge) {
+					console.log("--EDGE:");
+					console.log(model.cells[k].source);
+					console.log(model.cells[k].target);
 					var t = {};
 					t.id = model.cells[k].value;
 					t.name = model.cells[k].value;
+					
+
 					var s = {};
 					s.id = model.cells[k].source.value;
+					if(model.cells[k].source.k==='port') {
+						s.id = model.cells[k].source.id;
+					}
 					t.source = s;
+					
 					var s = {};
 					s.id = model.cells[k].target.value;
-					t.target = s;
-					
+					if(model.cells[k].target.k==='port') {
+						s.id = model.cells[k].target.id;
+					}
+
+					t.target = s;					
 					json.chart.transitions.push(t);
 				}
 			});					
@@ -656,15 +726,33 @@
 			model.beginUpdate();
 			//draw all edges
 			try {
+				//add root vertexes
 				json.chart.states.forEach(function(f) {
 					var v1 = null;					
-					
-					v1 = _graph.insertVertex(parent, f.id, f.id, f.x, f.y, 80, 60);
-					v1.setConnectable(true);
+					//is root node
+					if((!f.kind || f.kind!=='port') && !f.parent) {
+						v1 = _graph.insertVertex(parent, f.id, f.id, f.x, f.y, f.width, f.height);
+						v1.setConnectable(true);
+					}
+
+					if(f.children) {
+						f.children.forEach(function (c) {
+							var tc = json.chart.states.filter(function f(e) {return e.id == c})[0];
+							if(tc.kind && tc.kind==='port') {
+								addPort(_graph,v1,tc.x,tc.y,tc.position);
+							} else {
+								v1 = _graph.insertVertex(v1, tc.id, tc.id, tc.x, tc.y, tc.width, tc.height);
+								v1.setConnectable(true);
+							}
+						});
+						
+					}
 					
 				});
+				
 
 				json.chart.transitions.forEach(function(t) {
+					console.log("-----");
 					console.log(t);
 					var sv = model.getCell(t.source.id);
 					console.log(sv);
@@ -672,6 +760,7 @@
 					console.log(tv);
 					var e1 = _graph.insertEdge(parent, t.id, t.id, sv, tv);
 				});
+				serial = json.descriptor.serial;
 			}
 			finally
 			{
