@@ -50,6 +50,10 @@
 				// windows and the rubberband selection.
 				mxConstants.MIN_HOTSPOT_SIZE = 16;
 				mxConstants.DEFAULT_HOTSPOT = 1;
+
+
+				
+
 				
 				// Enables guides
 				mxGraphHandler.prototype.guidesEnabled = true;
@@ -406,7 +410,48 @@
 				}
 				return null;
 			};
+
+			graph.isCellMovable = function(cell) {
+				if(cell.k=="lbl") {
+					return false;
+				}
+				return true;				
+			}
 			
+		/*
+			graph.addMouseListener( {
+				currentState: null,
+				currentIconSet: null,
+				mouseDown: function(sender, me) {
+					console.log("mouse down");
+					var tmp = graph.view.getState(me.getCell());
+					if(tmp) {
+						console.log(tmp);
+						cell = tmp;
+						console.log(cell.parent);
+						tp = cell.parent;
+					}
+				},
+				mouseMove: function(sender, me) {
+					//console.log("mouse move");
+				},
+				mouseUp: function(sender, me) { 
+					console.log("mouse up");
+					if(cell) {
+						console.log(cell);
+						cell.parent = tp;
+						cell = null;
+					}						
+				},
+				dragEnter: function(evt, state) {
+					//console.log("drag enter");
+				},
+				dragLeave: function(evt, state) {
+					//console.log("drag leave");
+				}
+			});*/
+
+		
 			/* //event for edge created
 			//https://jgraph.github.io/mxgraph/docs/js-api/files/handler/mxConnectionHandler-js.html
 			graphComponent.getConnectionHandler().addListener(mxEvent.CONNECT, new mxIEventListener()\n{\n  public void invoke(Object sender, mxEventObject evt)\n  {\n    System.out.println("edge="+evt.getProperty("cell"));\n  }\n});\n
@@ -434,14 +479,15 @@
 						cc = cell.cr;
 						cell.cr++;
 						graph.model.beginUpdate();
-						var port = graph.insertVertex(cell, "id", 'Trigger', 1, 0.1 + 0.2*cc, 16, 16,
-								'image=editors/images/rectangle.gif;align=right;imageAlign=right;', true);
-						graph.insertVertex(port, "id", 'Trigger', 1, 0.1 + 0.2*cc, 0, 0,
-							'align=right;imageAlign=right;resizable=0;dropEnabled=0', false);
+						var port = graph.insertVertex(cell, "id", 'Port', 1, 0.1 + 0.2*cc, 16, 16,
+								'image=editors/images/rectangle.gif;align=right;imageAlign=right;verticalLabelPosition=bottom;verticalAlign=top', true);
+						var lbl = graph.insertVertex(port, "id", 'Trigger', 1, 0.1 + 0.2*cc, 0, 0,
+							'align=right;imageAlign=right;resizable=0;dragEnabled=0;', false);
+						lbl.k = 'lbl';
+						console.log(lbl);
 						port.geometry.offset = new mxPoint(-6, -8);
 						port.k = "port";
 						graph.model.setValue(port, "Test");
-						console.log(port);
 						graph.model.endUpdate();
 					});
 
@@ -584,7 +630,8 @@
 
 			Object.keys(model.cells).forEach(function (k) {
 				if(model.cells[k].value && !model.cells[k].edge) {
-					console.log("Vertex:" + model.cells[k]);
+					console.log("Vertex:")
+					console.log(model.cells[k]);
 					var s = {};
 					s.id=model.cells[k].value;
 					s.x = model.cells[k].geometry.x;
