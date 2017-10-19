@@ -480,31 +480,6 @@
 
 
 		function addPort(graph, cell, x, y,pos=+'l') {
-			if(pos==='l') {
-				if(!cell.cl) {
-					cell.cl = 0;
-				}						
-				cell.cl++;
-			}
-			if(pos==='r') {
-				if(!cell.cr) {
-					cell.cr = 0;
-				}						
-				cell.cr++;
-			}
-			if(pos==='b') {
-				if(!cell.cb) {
-					cell.cb = 0;
-				}						
-				cell.cb++;
-			}
-			if(pos==='t') {
-				if(!cell.ct) {
-					cell.ct = 0;
-				}						
-				cell.ct++;
-			}
-			
 			graph.model.beginUpdate();
 			serial++;
 			var s = serial;
@@ -531,16 +506,22 @@
 					graph.model.endUpdate();
 				});
 				} else {
+					initCellPorts(cell);
 					menu.addItem('Add port Right', 'images/right.png', function() {
+						cell.cr++;
 						addPort(graph, cell, 1,0.1 + 0.2*(cell.cr-1),'r');
 					});
+
 					menu.addItem('Add port Left', 'images/left.png', function() {
+						cell.cl++;
 						addPort(graph, cell, 0, 0.1 + 0.2*(cell.cl-1),'l');
 					});
 					menu.addItem('Add port Top', 'images/up.png', function() {
+						cell.ct++;
 						addPort(graph, cell, 0.1 + 0.2*(cell.ct-1), 0,'t');
 					});
 					menu.addItem('Add port Bottom', 'images/down.png', function() {
+						cell.cb++;
 						addPort(graph, cell, 0.1 + 0.2*(cell.cb-1), 1,'b');
 					});
 				}
@@ -718,6 +699,28 @@
 		}
 
 		/**
+		 * Initialize the counter of ports
+		 */
+		function initCellPorts(cell) {
+			//right
+			if(!cell.cr) {
+				cell.cr = 0;
+			}
+			//left	
+			if(!cell.cl) {
+				cell.cl = 0;
+			}	
+			//top					
+			if(!cell.ct) {
+				cell.ct = 0;
+			}
+			//bottom
+			if(!cell.cb) {
+				cell.cb = 0;
+			}			
+		}
+
+		/**
 		 * Create the visual representation from an emdl file
 		 */
 		function buildModel(json) {
@@ -739,7 +742,22 @@
 						f.children.forEach(function (c) {
 							var tc = json.chart.states.filter(function f(e) {return e.id == c})[0];
 							if(tc.kind && tc.kind==='port') {
+								initCellPorts(v1);
+								if(tc.position==='l') {
+									v1.cl++; 
+								}
+								if(tc.position==='r') {
+									v1.cr++; 
+								}
+								if(tc.position==='b') {
+									v1.cb++; 
+								}
+								if(tc.position==='t') {
+									v1.ct++; 
+								}
 								addPort(_graph,v1,tc.x,tc.y,tc.position);
+								
+
 							} else {
 								v1 = _graph.insertVertex(v1, tc.id, tc.id, tc.x, tc.y, tc.width, tc.height);
 								v1.setConnectable(true);
