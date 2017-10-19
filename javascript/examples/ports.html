@@ -262,6 +262,7 @@
 				mxUtils.writeln(hints, '- Shift- or Rightclick and drag for panning');
 				mxUtils.writeln(hints, '- Move the mouse over a cell to see a tooltip');
 				mxUtils.writeln(hints, '- Click and drag a vertex to move and connect');
+				mxUtils.writeln(hints, '- Ports are managed with right click');
 				document.body.appendChild(hints);
 				
 				// Creates a new DIV that is used as a toolbar and adds
@@ -388,9 +389,26 @@
 						var source = this.getTerminal(cell, true);
 						style = 'strokeWidth=2;strokeColor=black;';
 
+						var dash = false;
+						if(target && target.children) {
+							target.children.forEach(function (c){
+								if(c.k=='port') {
+									dash = true;
+								}
+							});
+						}
+
+						if(source && source.children) {
+							source.children.forEach(function (c){
+								if(c.k=='port') {
+									dash = true;
+								}
+							});
+						}
+
 						if (target != null) {
 							if(target.k && target.k == "port" || 
-							   source.k && source.k == "port" ) {
+							   source.k && source.k == "port" || dash) {
 								var state = graph.getView().getState(target);
 								style += ';endArrow=dash';
 								
@@ -458,6 +476,19 @@
 			*/
 		};
 
+
+		function addPort(graph, cell, x, y) {
+			graph.model.beginUpdate();
+			var port = graph.insertVertex(cell, "id", null, x, y, 16, 16,
+				'image=editors/images/rectangle.gif;align=right;imageAlign=right;verticalLabelPosition=bottom;verticalAlign=top', true);
+			var lbl = graph.insertVertex(port, "id", 'P', x, y, 0, 0,
+				'align=right;imageAlign=right;resizable=0;dragEnabled=0;', false);
+			lbl.k = 'lbl';
+			port.geometry.offset = new mxPoint(-6, -8);
+			port.k = "port";
+			graph.model.endUpdate();
+		}
+
 		/**
 		 * Create the popup menu
 		 */
@@ -465,7 +496,6 @@
 			if (cell != null) {
 				if(cell.k && cell.k === "port") {
 					menu.addItem('Remove', 'images/delete2.png', function() {
-
 					graph.model.beginUpdate();
 					graph.removeCells([cell]);
 					graph.model.endUpdate();
@@ -475,99 +505,32 @@
 						if(!cell.cr) {
 							cell.cr = 0;
 						}
-						var cc=cell.cr;
-						cc = cell.cr;
 						cell.cr++;
-						graph.model.beginUpdate();
-						var port = graph.insertVertex(cell, "id", 'Port', 1, 0.1 + 0.2*cc, 16, 16,
-								'image=editors/images/rectangle.gif;align=right;imageAlign=right;verticalLabelPosition=bottom;verticalAlign=top', true);
-						var lbl = graph.insertVertex(port, "id", 'Trigger', 1, 0.1 + 0.2*cc, 0, 0,
-							'align=right;imageAlign=right;resizable=0;dragEnabled=0;', false);
-						lbl.k = 'lbl';
-						console.log(lbl);
-						port.geometry.offset = new mxPoint(-6, -8);
-						port.k = "port";
-						graph.model.setValue(port, "Test");
-						graph.model.endUpdate();
+						addPort(graph, cell, 1,0.1 + 0.2*(cell.cr-1));
 					});
 
-
-				menu.addItem('Add port Left', 'images/left.png', function() {
-
-
-					if(!cell.cl) {
-						cell.cl = 0;
-					}
-
-					var cc=cell.cl;
-					
-					cell.cl++;
-					x = 0;
-					y = 0.1 + 0.2*cc;
-					
-
-					graph.model.beginUpdate();
-
-					var port = graph.insertVertex(cell, null, 'Trigger', x, y, 16, 16,
-							'port;image=editors/images/rectangle.gif;align=right;imageAlign=right;', true);
-					port.geometry.offset = new mxPoint(-6, -8);
-					port.k = "port";
-
-					v1 = cell;
-					graph.model.endUpdate();
-				});
-
-				menu.addItem('Add port Top', 'images/up.png', function() {
-						
-					if(!cell.ct) {
-						cell.ct = 0;
-					}
-
-					var cc=cell.ct;
-					
-					//add on top
-					
-						cc = cell.ct;
+					menu.addItem('Add port Left', 'images/left.png', function() {
+						if(!cell.cl) {
+							cell.cl = 0;
+						}						
+						cell.cl++;
+						addPort(graph, cell, 0, 0.1 + 0.2*(cell.cl-1));
+					});
+					menu.addItem('Add port Top', 'images/up.png', function() {
+						if(!cell.ct) {
+							cell.ct = 0;
+						}
 						cell.ct++;
-						var x = 0.1 + 0.2*cc;
-						var y = 0;
-					
+						addPort(graph, cell, 0.1 + 0.2*(cell.ct-1), 0);
+					});
 
-					graph.model.beginUpdate();
-
-					var port = graph.insertVertex(cell, null, 'Trigger', x, y, 16, 16,
-							'port;image=editors/images/rectangle.gif;align=right;imageAlign=right;', true);
-					port.geometry.offset = new mxPoint(-6, -8);
-					port.k = "port";
-
-					v1 = cell;
-					graph.model.endUpdate();
-				});
-
-
-				menu.addItem('Add port Bottom', 'images/down.png', function() {
-					
-					if(!cell.cb) {
-						cell.cb = 0;
-					}
-
-					var cc=cell.cl;
-					//add on bottom
-					cc = cell.cb;
-					cell.cb++;
-					x = 0.1 + 0.2*cc;
-					y = 1;
-					
-					graph.model.beginUpdate();
-
-					var port = graph.insertVertex(cell, null, 'Trigger', x, y, 16, 16,
-							'port;image=editors/images/rectangle.gif;align=right;imageAlign=right;', true);
-					port.geometry.offset = new mxPoint(-6, -8);
-					port.k = "port";
-
-					v1 = cell;
-					graph.model.endUpdate();
-				});
+					menu.addItem('Add port Bottom', 'images/down.png', function() {
+						if(!cell.cb) {
+							cell.cb = 0;
+						}
+						cell.cb++;
+						addPort(graph, cell, 0.1 + 0.2*(cell.cb-1), 1);
+					});
 				}
 				
 			}
