@@ -748,7 +748,13 @@
 				}
 				addPort(_graph,parent,cell.x,cell.y,cell.position);
 			} else {
-				var v1 = _graph.insertVertex(null, cell.id, cell.id, cell.x, cell.y, cell.width, cell.height);
+				console.log("IS NOT PORT " + parent);
+				if(parent || !cell.parent) {
+					console.log("DRAW " + cell.id)
+					var v1 = _graph.insertVertex(parent, cell.id, cell.id, cell.x, cell.y, cell.width, cell.height);
+				} else {
+					return;
+				}
 			}
 			if(parent && v1) {
 				v1.parent=parent;
@@ -756,7 +762,7 @@
 				//parent.children.push(v1);
 			}
 			cell.drawn = true;
-			console.log("DRAW " + cell.id)
+			
 			var model = _graph.getModel();
 
 			if(cell.children) {
