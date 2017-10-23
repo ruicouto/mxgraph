@@ -479,15 +479,23 @@
 		};
 
 
-		function addPort(graph, cell, x, y,pos=+'l') {
+		function addPort(graph, cell, x, y,pos=+'l', id, lbl) {
+			console.log(id + ", " + lbl);
 			graph.model.beginUpdate();
 			serial++;
 			var s = serial;
-			var port = graph.insertVertex(cell, "port"+serial, null, x, y, 16, 16,
+			if(!id) {
+				id = "port"+serial;
+			}
+			if(!lbl) {
+				lbl = "lbl"+serial;
+			}
+			var port = graph.insertVertex(cell, id, null, x, y, 16, 16,
 				'image=editors/images/rectangle.gif;align=right;imageAlign=right;verticalLabelPosition=bottom;verticalAlign=top', true);
-			var lbl = graph.insertVertex(port, "lbl"+serial, 'P'+serial, x, y, 0, 0,
+			var lbl = graph.insertVertex(port, id, lbl, x, y, 0, 0,
 				'align=right;imageAlign=right;resizable=0;dragEnabled=0;', false);
 			lbl.k = 'lbl';
+			lbl.setConnectable(true);
 			port.geometry.offset = new mxPoint(-6, -8);
 			port.k = "port";
 			port.pos=pos;
@@ -593,9 +601,7 @@
 
 			Object.keys(model.cells).forEach(function (k) {
 				if(model.cells[k].value && !model.cells[k].edge) {
-					console.log("Vertex:")
 					var tcell = model.cells[k];
-					console.log(tcell);
 					var s = {};
 					s.id=tcell.value;
 					if(tcell.parent && tcell.parent.k && tcell.parent.k==='port') {
@@ -617,13 +623,11 @@
 						if(tcell.parent.k && tcell.parent.k === 'port') {
 							//parent of port label is a rectangle with no value
 							s.parent=tcell.parent.parent.value;
-							console.log("is port");
 						} else {
 							s.parent=tcell.parent.value;
 						}
 					}
 					
-					console.log(tcell);
 					//Check children
 					if(tcell.children) {
 						s.children=[];
@@ -642,9 +646,6 @@
 
 				//edges
 				if(model.cells[k].edge) {
-					console.log("--EDGE:");
-					console.log(model.cells[k].source);
-					console.log(model.cells[k].target);
 					var t = {};
 					t.id = model.cells[k].value;
 					t.name = model.cells[k].value;
@@ -669,7 +670,6 @@
 			});					
 
 			json = JSON.stringify(json);
-			console.log(json);
 
 			//TODO show window
 			/*
@@ -730,8 +730,6 @@
 			if(cell.drawn) {
 				return;
 			}
-			console.log("processCell " + cell.id);
-			console.log(cell.kind);
 			if(cell.kind && cell.kind==='port') {
 				initCellPorts(cell);
 				if(cell.position==='l') {
@@ -746,11 +744,9 @@
 				if(cell.position==='t') {
 					cell.ct++; 
 				}
-				addPort(_graph,parent,cell.x,cell.y,cell.position);
+				addPort(_graph,parent,cell.x,cell.y,cell.position, cell.id, cell.value);
 			} else {
-				console.log("IS NOT PORT " + parent);
 				if(parent || !cell.parent) {
-					console.log("DRAW " + cell.id)
 					var v1 = _graph.insertVertex(parent, cell.id, cell.id, cell.x, cell.y, cell.width, cell.height);
 				} else {
 					return;
@@ -767,12 +763,10 @@
 
 			if(cell.children) {
 				cell.children.forEach(function (c) {
-					console.log(" children " + c);
 					var tc = states.filter(function f(e) {return e.id == c})[0];
 					processCell(states, tc, v1);					
 				});
 			}
-			console.log("<-");
 		}
 
 		/**
@@ -787,10 +781,9 @@
 
 				//add root vertexes
 				json.chart.states.forEach(function(f) {
-					console.log("++++");
 					processCell(json.chart.states, f, null);
-					return;
-
+					/*return;
+					
 					var v1 = null;					
 					//is root node
 					if((!f.kind || f.kind!=='port') && !f.parent) {
@@ -798,11 +791,8 @@
 						v1.setConnectable(true);
 					}
 
-					console.log(f.id + " has no parent");
 					if(v1 === null && f.parent) {
-						
 						v1 = model.getCell(f.parent);
-						console.log("New parent: " + f.parent);
 					}
 
 					if(f.children) {
@@ -820,30 +810,24 @@
 									v1.cb++; 
 								}
 								if(tc.position==='t') {
-									v1.ct++; 
+									v1.ct++;
 								}
-								addPort(_graph,v1,tc.x,tc.y,tc.position);
-								
-
+								addPort(_graph,v1,tc.x,tc.y,tc.position, tc.id, tc.value);
 							} else {
 								v1 = _graph.insertVertex(v1, tc.id, tc.id, tc.x, tc.y, tc.width, tc.height);
 								v1.setConnectable(true);
 							}
 						});
 						
-					}
+					}*/
 					
 				});
 				
 				
 				//edges
 				json.chart.transitions.forEach(function(t) {
-					console.log("-----");
-					console.log(t);
 					var sv = model.getCell(t.source.id);
-					console.log(sv);
 					var tv = model.getCell(t.target.id);
-					console.log(tv);
 					var e1 = _graph.insertEdge(parent, t.id, t.id, sv, tv);
 				});
 				serial = json.descriptor.serial;
@@ -852,9 +836,6 @@
 			{
 				model.endUpdate();		
 			}
-			
-			//console.log(json);
-			//console.log(_graph);
 		}
 
 
