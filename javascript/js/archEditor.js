@@ -175,35 +175,10 @@ function main(container, outline, toolbar, sidebar, status) {
         // be used. For example, the first call to addSidebar icon would
         // be as follows:
         // addSidebarIcon(graph, sidebar, 'Website', 'images/icons48/earth.png');
-        addSidebarIcon(graph, sidebar,
-            'Component'//+
-            //'<img src="images/icons48/earth.png" width="48" height="48">'+
-            //'<br>'+
-            //'<a href="http://www.jgraph.com" target="_blank">Browse</a>'
-            ,'images/icons48/sig.png');
-        /*addSidebarIcon(graph, sidebar,
-            '<h1 style="margin:0px;">Process</h1><br>'+
-            '<img src="images/icons48/gear.png" width="48" height="48">'+
-            '<br><select><option>Value1</option><option>Value2</option></select><br>',
-            'images/icons48/gear.png');
-        addSidebarIcon(graph, sidebar,
-            '<h1 style="margin:0px;">Keys</h1><br>'+
-            '<img src="images/icons48/keys.png" width="48" height="48">'+
-            '<br>'+
-            '<button onclick="mxUtils.alert(\'generate\');">Generate</button>',
-            'images/icons48/keys.png');
-        addSidebarIcon(graph, sidebar,
-            '<h1 style="margin:0px;">New Mail</h1><br>'+
-            '<img src="images/icons48/mail_new.png" width="48" height="48">'+
-            '<br><input type="checkbox"/>CC Archive',
-            'images/icons48/mail_new.png');
-        addSidebarIcon(graph, sidebar,
-            '<h1 style="margin:0px;">Server</h1><br>'+
-            '<img src="images/icons48/server.png" width="48" height="48">'+
-            '<br>'+
-            '<input type="text" size="12" value="127.0.0.1"/>',
-            'images/icons48/server.png');*/
-
+        addSidebarIcon(graph, sidebar,'Component','images/icons48/sig.png','component');
+        
+        addSidebarIcon(graph, sidebar,'Leaf','images/icons48/leaf.png','leaf');
+        
         // Displays useful hints in a small semi-transparent box.
         var hints = document.createElement('div');
         hints.style.position = 'absolute';
@@ -270,7 +245,7 @@ function main(container, outline, toolbar, sidebar, status) {
 
         // Defines a new export action
         editor.addAction('export', exportToJson);
-        addToolbarButton(editor, toolbar, 'export', 'Export', 'images/export1.png');
+        addToolbarButton(editor, toolbar, 'export', 'Save', 'images/disk.png');
 
 
         // Import action
@@ -353,7 +328,7 @@ function main(container, outline, toolbar, sidebar, status) {
                 var dash = false;
                 if(target && target.children) {
                     target.children.forEach(function (c){
-                        if(c.k=='port') {
+                        if(c.r=='port') {
                             dash = true;
                         }
                     });
@@ -361,15 +336,15 @@ function main(container, outline, toolbar, sidebar, status) {
 
                 if(source && source.children) {
                     source.children.forEach(function (c){
-                        if(c.k=='port') {
+                        if(c.r=='port') {
                             dash = true;
                         }
                     });
                 }
 
                 if (target != null && source !=null) {
-                    if(target.k && target.k == "port" || 
-                       source.k && source.k == "port" || dash) {
+                    if(target.r && target.r == "port" || 
+                       source.r && source.r == "port" || dash) {
                         var state = graph.getView().getState(target);
                         style += ';endArrow=dash';
                         
@@ -387,7 +362,7 @@ function main(container, outline, toolbar, sidebar, status) {
                 var adjust = false; //adjust label position
                 if (cell.children) {
                     cell.children.forEach( function (e) {
-                        if(!e.k) {
+                        if(!e.r || e.r!=='port') { //r - role, internal property
                             adjust = true;
                         }
                     });
@@ -396,21 +371,25 @@ function main(container, outline, toolbar, sidebar, status) {
                 if(adjust) {
                     style += ';verticalAlign=top';
                 }
+                if(cell.k && cell.k == 'leaf') {
+                    style+=";shape=image;image=images/icons48/leaf.png;";
+                }
             }
+            
             return style;
         }
         return null;
     };
 
     graph.isCellMovable = function(cell) {
-        if(cell.k=="lbl") {
+        if(cell.r=="lbl") {
             return false;
         }
         return true;				
     }
 
     graph.isCellConnectable = function(cell) {
-        if(cell.k=="lbl") {
+        if(cell.r=="lbl") {
             return false;
         }
         return true;				
@@ -472,10 +451,10 @@ function addPort(graph, cell, x, y,pos=+'l', id, lbl) {
         'image=editors/images/rectangle.gif;align=right;imageAlign=right;verticalLabelPosition=bottom;verticalAlign=top', true);
     var lbl = graph.insertVertex(port, id, lbl, x, y, 0, 0,
         'align=right;imageAlign=right;resizable=0;dragEnabled=0;', false);
-    lbl.k = 'lbl';
+    lbl.r = 'lbl';
     lbl.setConnectable(true);
     port.geometry.offset = new mxPoint(-6, -8);
-    port.k = "port";
+    port.r = "port";
     port.pos=pos;
     graph.model.endUpdate();
 }
@@ -486,7 +465,7 @@ function addPort(graph, cell, x, y,pos=+'l', id, lbl) {
  */
 function createPopupMenu(graph, menu, cell, evt) {
     if (cell != null) {
-        if(cell.k && cell.k === "port") {
+        if(cell.r && cell.r === "port") {
             menu.addItem('Remove', 'images/delete2.png', function() {
             graph.model.beginUpdate();
             graph.removeCells([cell]);
@@ -569,22 +548,6 @@ function processOverlay(cell, graph) {
     }
 }
 
-/*
-var overlay = new mxCellOverlay(
-								new mxImage('editors/images/overlays/check.png', 16, 16),
-								'Overlay tooltip');
-
-							// Installs a handler for clicks on the overlay							
-							overlay.addListener(mxEvent.CLICK, function(sender, evt2)
-							{
-								mxUtils.alert('Overlay clicked');
-							});
-							
-							// Sets the overlay for the cell in the graph
-                            graph.addCellOverlay(cell, overlay);
-                            */
-
-
 /**
  * Add button to the toolbar
  */
@@ -592,8 +555,7 @@ function addToolbarButton(editor, toolbar, action, label, image, isTransparent)
 {
     var button = document.createElement('button');
     button.style.fontSize = '10';
-    if (image != null)
-    {
+    if (image != null) {
         var img = document.createElement('img');
         img.setAttribute('src', image);
         img.style.width = '16px';
@@ -602,14 +564,12 @@ function addToolbarButton(editor, toolbar, action, label, image, isTransparent)
         img.style.marginRight = '2px';
         button.appendChild(img);
     }
-    if (isTransparent)
-    {
+    if (isTransparent) {
         button.style.background = 'transparent';
         button.style.color = '#FFFFFF';
         button.style.border = 'none';
     }
-    mxEvent.addListener(button, 'click', function(evt)
-    {
+    mxEvent.addListener(button, 'click', function(evt) {
         editor.execute(action);
     });
     mxUtils.write(button, label);
@@ -641,8 +601,6 @@ function exportToJson(editor, cell) {
     json.chart.variables=[];
     json.chart.constants=[];
     json.chart.datatypes=[];
-
-
     
     var model = _graph.getModel();
 
@@ -651,7 +609,7 @@ function exportToJson(editor, cell) {
             var tcell = model.cells[k];
             var s = {};
             s.id=tcell.value;
-            if(tcell.parent && tcell.parent.k && tcell.parent.k==='port') {
+            if(tcell.parent && tcell.parent.r && tcell.parent.r==='port') {
                 s.id = tcell.parent.id;
             }
             s.value=tcell.value;
@@ -663,14 +621,18 @@ function exportToJson(editor, cell) {
                 s.spec = tcell.spec;
             }
 
-            if(tcell.parent.k && tcell.parent.k==='port') {
-                s.kind = 'port';
+            if(tcell.parent.r && tcell.parent.r==='port') {
+                s.role = 'port';
                 s.position = tcell.parent.pos;
+            }
+
+            if(tcell.k) {
+                s.kind = tcell.k;
             }
 
             //set parent
             if(tcell.parent) {
-                if(tcell.parent.k && tcell.parent.k === 'port') {
+                if(tcell.parent.r && tcell.parent.r === 'port') {
                     //parent of port label is a rectangle with no value
                     s.parent=tcell.parent.parent.value;
                 } else {
@@ -685,7 +647,7 @@ function exportToJson(editor, cell) {
                     if(c.value) {
                         s.children.push(c.value);
                     }
-                    if(c.k && c.k==='port') {
+                    if(c.r && c.r==='port') {
                         s.children.push(c.id);
                     }
                 });
@@ -703,14 +665,14 @@ function exportToJson(editor, cell) {
 
             var s = {};
             s.id = model.cells[k].source.value;
-            if(model.cells[k].source.k==='port') {
+            if(model.cells[k].source.r==='port') {
                 s.id = model.cells[k].source.id;
             }
             t.source = s;
             
             var s = {};
             s.id = model.cells[k].target.value;
-            if(model.cells[k].target.k==='port') {
+            if(model.cells[k].target.r==='port') {
                 s.id = model.cells[k].target.id;
             }
 
@@ -788,7 +750,7 @@ function processCell(states, cell, parent) {
     if(cell.drawn) {
         return;
     }
-    if(cell.kind && cell.kind==='port') {
+    if(cell.role && cell.role==='port') {
         if(parent) {
             initCellPorts(cell);
             if(cell.position==='l') {
@@ -823,6 +785,14 @@ function processCell(states, cell, parent) {
     if(cell.spec && v1) {
         v1.spec = cell.spec;
         processOverlay(v1,_graph);
+    }
+
+    if(cell.kind && v1) {
+        v1.k = cell.kind;
+    }
+
+    if(cell.role && v1) {
+        v1.r = cell.role;
     }
     
     var model = _graph.getModel();
@@ -904,61 +874,24 @@ function showModalWindow(graph, title, content, width, height)
 /**
  * Create sidebar icon
  */
-function addSidebarIcon(graph, sidebar, label, image)
-{
+function addSidebarIcon(graph, sidebar, label, image, id) {
     // Function that is executed when the image is dropped on
     // the graph. The cell argument points to the cell under
     // the mousepointer if there is one.
-    var funct = function(graph, evt, cell, x, y)
-    {
+    var funct = function(graph, evt, cell, x, y) {
+        console.log(this.id);
+        
         var parent = graph.getDefaultParent();
         var model = graph.getModel();
-        
         var v1 = null;
-        
         model.beginUpdate();
         try	{
-            // NOTE: For non-HTML labels the image must be displayed via the style
-            // rather than the label markup, so use 'image=' + image for the style.
-            // as follows: v1 = graph.insertVertex(parent, null, label,
-            // pt.x, pt.y, 120, 120, 'image=' + image);
             v1 = graph.insertVertex(parent, null, label, x, y, 80, 60);
-            //v1.setConnectable(false); //set true for other models
-            v1.setConnectable(true); //set true for other models
-            
-
-            // Presets the collapsed size
-            //v1.geometry.alternateBounds = new mxRectangle(0, 0, 120, 40);
-                                
-            // Adds the ports at various relative locations
-            /*var port = graph.insertVertex(v1, null, 'Trigger', 0, 0.25, 16, 16,
-                    'port;image=editors/images/overlays/flash.png;align=right;imageAlign=right;spacingRight=18', true);
-            port.geometry.offset = new mxPoint(-6, -8);
-
-            graph.multiplicities.push(new mxMultiplicity(
-                true, "Trigger", null, null, 1, 2, ['Error'],
-                'Source Must Have 1 or 2 Targets',
-                'Source Must Connect to Target',true));*/
-
-            /*
-            var port = graph.insertVertex(v1, null, 'Input', 0, 0.75, 16, 16,
-                    'port;image=editors/images/overlays/check.png;align=right;imageAlign=right;spacingRight=18', true);
-            port.geometry.offset = new mxPoint(-6, -4);*/
-            
-            /*
-            var port = graph.insertVertex(v1, null, 'Error', 1, 0.25, 16, 16,
-                    'port;image=editors/images/overlays/error.png;spacingLeft=18', true);
-            port.geometry.offset = new mxPoint(-8, -8);*/
-            /*
-            var port = graph.insertVertex(v1, null, 'Result', 1, 0.75, 16, 16,
-                    'port;image=editors/images/overlays/information.png;spacingLeft=18', true);
-            port.geometry.offset = new mxPoint(-8, -4);*/
-        }
-        finally
-        {
+            v1.setConnectable(true); 
+            v1.k = this.id;
+        } finally {
             model.endUpdate();
-        }
-        
+        }        
         graph.setSelectionCell(v1);
     }
     
@@ -974,9 +907,10 @@ function addSidebarIcon(graph, sidebar, label, image)
     dragElt.style.border = 'dashed gray 1px';
     dragElt.style.width = '80px';
     dragElt.style.height = '60px';
-                          
+
     // Creates the image which is used as the drag icon (preview)
     var ds = mxUtils.makeDraggable(img, graph, funct, dragElt, 0, 0, true, true);
+    ds.id=id;
     ds.setGuidesEnabled(true);
 };
 
