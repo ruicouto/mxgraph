@@ -384,9 +384,16 @@ function main(container, outline, toolbar, sidebar, status) {
             }
             else if (this.isVertex(cell)) {
                 var geometry = this.getGeometry(cell);
-                
-
+                var adjust = false; //adjust label position
                 if (cell.children) {
+                    cell.children.forEach( function (e) {
+                        if(!e.k) {
+                            adjust = true;
+                        }
+                    });
+                }
+                //move label to top
+                if(adjust) {
                     style += ';verticalAlign=top';
                 }
             }
