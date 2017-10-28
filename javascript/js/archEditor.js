@@ -267,7 +267,7 @@ function main(container, outline, toolbar, sidebar, status) {
         //import metamodel
         
         document.getElementById('metamodel').addEventListener('change', handleMetamodelSelect, false);
-        editor.addAction('import', function(editor, cell) {					
+        editor.addAction('import_m', function(editor, cell) {					
             var elem = document.getElementById("metamodel");
             if(elem && document.createEvent) {
                var evt = document.createEvent("MouseEvents");
@@ -275,7 +275,7 @@ function main(container, outline, toolbar, sidebar, status) {
                elem.dispatchEvent(evt);
             }
         });
-        addToolbarButton(editor, toolbar, 'import', 'Open Metamodel', 'images/folder_palette.png');
+        addToolbarButton(editor, toolbar, 'import_m', 'Open Metamodel', 'images/folder_palette.png');
 
 
         
