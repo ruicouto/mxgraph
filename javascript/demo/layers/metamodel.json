@@ -1,0 +1,17 @@
+{ "elements": [
+	{
+		"name":"Presentation",
+		"image":"images/icons48/earth.png",
+		"id":"presentation"
+	},
+	{
+		"name":"Business",
+		"image":"images/icons48/gear.png",
+		"id":"business"
+	},
+	{
+		"name":"Data",
+		"image":"images/icons48/server.png",
+		"id":"data"
+	}
+]}

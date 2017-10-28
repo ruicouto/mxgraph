@@ -252,20 +252,7 @@ function main(container, outline, toolbar, sidebar, status) {
 
         toolbar.appendChild(spacer.cloneNode(true));
 
-        // Import action
-        document.getElementById('files').addEventListener('change', handleFileSelect, false);
-        editor.addAction('import', function(editor, cell) {					
-            var elem = document.getElementById("files");
-            if(elem && document.createEvent) {
-               var evt = document.createEvent("MouseEvents");
-               evt.initEvent("click", true, false);
-               elem.dispatchEvent(evt);
-            }
-        });
-        addToolbarButton(editor, toolbar, 'import', 'Open model', 'images/folder.png');
-        
         //import metamodel
-        
         document.getElementById('metamodel').addEventListener('change', handleMetamodelSelect, false);
         editor.addAction('import_m', function(editor, cell) {					
             var elem = document.getElementById("metamodel");
@@ -277,7 +264,17 @@ function main(container, outline, toolbar, sidebar, status) {
         });
         addToolbarButton(editor, toolbar, 'import_m', 'Open Metamodel', 'images/folder_palette.png');
 
-
+        // Import action
+        document.getElementById('files').addEventListener('change', handleFileSelect, false);
+        editor.addAction('import', function(editor, cell) {					
+            var elem = document.getElementById("files");
+            if(elem && document.createEvent) {
+               var evt = document.createEvent("MouseEvents");
+               evt.initEvent("click", true, false);
+               elem.dispatchEvent(evt);
+            }
+        });
+        addToolbarButton(editor, toolbar, 'import', 'Open model', 'images/folder.png');
         
         // Adds toolbar buttons into the status bar at the bottom
         // of the window.
@@ -611,7 +608,6 @@ function exportToJson(editor, cell) {
     json.descriptor.chart_name="none";
     json.descriptor.serial=serial;
 
-
     //initialize chart variables
     json.chart = {};
     json.chart.states=[];
@@ -727,31 +723,43 @@ function exportToJson(editor, cell) {
 function handleFileSelect(evt) {
     var files = evt.target.files; // FileList object
     var output = [];
-    for (var i = 0, f; f = files[i]; i++) {
-        var reader = new FileReader();
-        reader.onload = function(e) {
-            var text = reader.result;
-            buildModel(JSON.parse(text));
+    
+        for (var i = 0, f; f = files[i]; i++) {
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    var text = reader.result;
+                    buildModel(JSON.parse(text));
+                } catch(err) {
+                    console.log("Invalid spec file");
+                }
+            }
+            reader.readAsText(f, "utf-8");
         }
-        reader.readAsText(f, "utf-8");
-    }
+    
 }
 
 function handleMetamodelSelect(evt) {
     var files = evt.target.files; // FileList object
-    for (var i = 0, f; f = files[i]; i++) {
-        var reader = new FileReader();
-        var text = reader.result;
-        reader.onload = function(e) {
-            //console.log(reader.result);
-            _metamodel = JSON.parse(reader.result);
-            _metamodel.elements.forEach(function (f) {
-                console.log(f);
-                addSidebarIcon(_graph, _sidebar,f.name,f.image,f.id);
-            });
+    
+        for (var i = 0, f; f = files[i]; i++) {
+            var reader = new FileReader();
+            var text = reader.result;
+            reader.onload = function(e) {
+                try {
+                    //console.log(reader.result);
+                    _metamodel = JSON.parse(reader.result);
+                    _metamodel.elements.forEach(function (f) {
+                        console.log(f);
+                        addSidebarIcon(_graph, _sidebar,f.name,f.image,f.id);
+                    });
+                } catch(err) {
+                    console.log("Invalid metamodel")
+                }
+            }
+            reader.readAsText(f, "utf-8");
         }
-        reader.readAsText(f, "utf-8");
-    }
+    
 }
 
 /**
