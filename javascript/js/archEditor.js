@@ -250,6 +250,7 @@ function main(container, outline, toolbar, sidebar, status) {
         editor.addAction('export', exportToJson);
         addToolbarButton(editor, toolbar, 'export', 'Save', 'images/disk.png');
 
+        toolbar.appendChild(spacer.cloneNode(true));
 
         // Import action
         document.getElementById('files').addEventListener('change', handleFileSelect, false);
@@ -261,10 +262,10 @@ function main(container, outline, toolbar, sidebar, status) {
                elem.dispatchEvent(evt);
             }
         });
-        addToolbarButton(editor, toolbar, 'import', 'Import', 'images/folder.png');
+        addToolbarButton(editor, toolbar, 'import', 'Open model', 'images/folder.png');
         
         //import metamodel
-        toolbar.appendChild(spacer.cloneNode(true));
+        
         document.getElementById('metamodel').addEventListener('change', handleMetamodelSelect, false);
         editor.addAction('import', function(editor, cell) {					
             var elem = document.getElementById("metamodel");
@@ -274,7 +275,7 @@ function main(container, outline, toolbar, sidebar, status) {
                elem.dispatchEvent(evt);
             }
         });
-        addToolbarButton(editor, toolbar, 'import', 'Import', 'images/folder.png');
+        addToolbarButton(editor, toolbar, 'import', 'Open Metamodel', 'images/folder_palette.png');
 
 
         

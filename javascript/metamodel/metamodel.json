@@ -1,0 +1,12 @@
+{ "elements": [
+	{
+		"name":"Leaf",
+		"image":"images/icons48/leaf.svg",
+		"id":"leaf"
+	},
+	{
+		"name":"Node",
+		"image":"images/icons48/server.png",
+		"id":"node"
+	}
+]}
