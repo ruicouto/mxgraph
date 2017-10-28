@@ -1,4 +1,6 @@
 var _graph;
+var _sidebar;
+var _metamodel;
 var serial=0;
 
 
@@ -6,6 +8,7 @@ var serial=0;
 // DOM node with the specified ID. This function is invoked
 // from the onLoad event handler of the document (see below).
 function main(container, outline, toolbar, sidebar, status) {
+    _sidebar = sidebar;
     // Checks if the browser is supported
     if (!mxClient.isBrowserSupported()) {
         // Displays an error message if the browser is not supported.
@@ -177,7 +180,7 @@ function main(container, outline, toolbar, sidebar, status) {
         // addSidebarIcon(graph, sidebar, 'Website', 'images/icons48/earth.png');
         addSidebarIcon(graph, sidebar,'Component','images/icons48/sig.png','component');
         
-        addSidebarIcon(graph, sidebar,'Leaf','images/icons48/leaf.png','leaf');
+        //addSidebarIcon(graph, sidebar,'Leaf','images/icons48/leaf.svg','leaf');
         
         // Displays useful hints in a small semi-transparent box.
         var hints = document.createElement('div');
@@ -259,6 +262,21 @@ function main(container, outline, toolbar, sidebar, status) {
             }
         });
         addToolbarButton(editor, toolbar, 'import', 'Import', 'images/folder.png');
+        
+        //import metamodel
+        toolbar.appendChild(spacer.cloneNode(true));
+        document.getElementById('metamodel').addEventListener('change', handleMetamodelSelect, false);
+        editor.addAction('import', function(editor, cell) {					
+            var elem = document.getElementById("metamodel");
+            if(elem && document.createEvent) {
+               var evt = document.createEvent("MouseEvents");
+               evt.initEvent("click", true, false);
+               elem.dispatchEvent(evt);
+            }
+        });
+        addToolbarButton(editor, toolbar, 'import', 'Import', 'images/folder.png');
+
+
         
         // Adds toolbar buttons into the status bar at the bottom
         // of the window.
@@ -347,7 +365,6 @@ function main(container, outline, toolbar, sidebar, status) {
                        source.r && source.r == "port" || dash) {
                         var state = graph.getView().getState(target);
                         style += ';endArrow=dash';
-                        
                     } else {
                         if(cell.value && cell.value=="extends") {
                             style += ';endArrow=extend';
@@ -356,8 +373,7 @@ function main(container, outline, toolbar, sidebar, status) {
                         }
                     }
                 }
-            }
-            else if (this.isVertex(cell)) {
+            } else if (this.isVertex(cell)) {
                 var geometry = this.getGeometry(cell);
                 var adjust = false; //adjust label position
                 if (cell.children) {
@@ -371,8 +387,11 @@ function main(container, outline, toolbar, sidebar, status) {
                 if(adjust) {
                     style += ';verticalAlign=top';
                 }
-                if(cell.k && cell.k == 'leaf') {
-                    style+=";shape=image;image=images/icons48/leaf.png;";
+                if(cell.k && _metamodel) {
+                    var tc = _metamodel.elements.filter(function f(e) {return e.id == cell.k})[0];
+                    if(tc) {
+                        style+=";shape=image;image="+tc.image+";";
+                    }
                 }
             }
             
@@ -437,7 +456,7 @@ function main(container, outline, toolbar, sidebar, status) {
 
 
 function addPort(graph, cell, x, y,pos=+'l', id, lbl) {
-    console.log(id + ", " + lbl);
+    //console.log(id + ", " + lbl);
     graph.model.beginUpdate();
     serial++;
     var s = serial;
@@ -521,7 +540,6 @@ function showSpec(cell, graph) {
     wnd.setClosable(true)
     wnd.addListener(mxEvent.CLOSE, function(sender, evt) { 
         cell.spec = tb.value;
-        console.log(cell);
         var overlays = graph.getCellOverlays(cell);
         processOverlay(cell, graph);
     });
@@ -690,7 +708,6 @@ function exportToJson(editor, cell) {
     dlAnchorElem.setAttribute("download", "model.json");
     dlAnchorElem.click();
 
-    
     //TODO show window
     /*
     var textarea = document.createElement('textarea');
@@ -714,6 +731,23 @@ function handleFileSelect(evt) {
         reader.onload = function(e) {
             var text = reader.result;
             buildModel(JSON.parse(text));
+        }
+        reader.readAsText(f, "utf-8");
+    }
+}
+
+function handleMetamodelSelect(evt) {
+    var files = evt.target.files; // FileList object
+    for (var i = 0, f; f = files[i]; i++) {
+        var reader = new FileReader();
+        var text = reader.result;
+        reader.onload = function(e) {
+            //console.log(reader.result);
+            _metamodel = JSON.parse(reader.result);
+            _metamodel.elements.forEach(function (f) {
+                console.log(f);
+                addSidebarIcon(_graph, _sidebar,f.name,f.image,f.id);
+            });
         }
         reader.readAsText(f, "utf-8");
     }
