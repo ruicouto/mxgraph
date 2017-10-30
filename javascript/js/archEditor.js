@@ -246,13 +246,13 @@ function main(container, outline, toolbar, sidebar, status) {
         
         toolbar.appendChild(spacer.cloneNode(true));
 
-        // Defines a new export action
+        //Define the export action
         editor.addAction('export', exportToJson);
         addToolbarButton(editor, toolbar, 'export', 'Save', 'images/disk.png');
 
         toolbar.appendChild(spacer.cloneNode(true));
 
-        //import metamodel
+        //Define import metamodel action
         document.getElementById('metamodel').addEventListener('change', handleMetamodelSelect, false);
         editor.addAction('import_m', function(editor, cell) {					
             var elem = document.getElementById("metamodel");
@@ -264,7 +264,7 @@ function main(container, outline, toolbar, sidebar, status) {
         });
         addToolbarButton(editor, toolbar, 'import_m', 'Open Metamodel', 'images/folder_palette.png');
 
-        // Import action
+        //Define import model action
         document.getElementById('files').addEventListener('change', handleFileSelect, false);
         editor.addAction('import', function(editor, cell) {					
             var elem = document.getElementById("files");
@@ -318,8 +318,6 @@ function main(container, outline, toolbar, sidebar, status) {
         return createPopupMenu(graph, menu, cell, evt);
     };
 
-
-
     // Needs to set a flag to check for dynamic style changes,
     // that is, changes to styles on cells where the style was
     // not explicitely changed using mxStyleChange
@@ -334,7 +332,6 @@ function main(container, outline, toolbar, sidebar, status) {
     graph.model.getStyle = function(cell) {
         if (cell != null) {
             var style = previous.apply(this, arguments);
-            
             if (this.isEdge(cell)) {
                 
                 var target = this.getTerminal(cell, false);
@@ -344,7 +341,7 @@ function main(container, outline, toolbar, sidebar, status) {
                 var dash = false;
                 if(target && target.children) {
                     target.children.forEach(function (c){
-                        if(c.r=='port') {
+                        if(c.meta.role==='port') {
                             dash = true;
                         }
                     });
@@ -352,18 +349,20 @@ function main(container, outline, toolbar, sidebar, status) {
 
                 if(source && source.children) {
                     source.children.forEach(function (c){
-                        if(c.r=='port') {
+                        if(c.meta.role==='port') {
                             dash = true;
                         }
                     });
                 }
 
                 if (target != null && source !=null) {
-                    if(target.r && target.r == "port" || 
-                       source.r && source.r == "port" || dash) {
+                    //if one vertex has/is a port, don't draw an arrow
+                    if(target.meta.role && target.meta.role === 'port' || 
+                       source.meta.role && source.meta.role === 'port' || dash) {
                         var state = graph.getView().getState(target);
                         style += ';endArrow=dash';
                     } else {
+                        //if value is extends, change arrow head
                         if(cell.value && cell.value=="extends") {
                             style += ';endArrow=extend';
                         } else {
@@ -371,42 +370,62 @@ function main(container, outline, toolbar, sidebar, status) {
                         }
                     }
                 }
+
             } else if (this.isVertex(cell)) {
                 var geometry = this.getGeometry(cell);
                 var adjust = false; //adjust label position
                 if (cell.children) {
                     cell.children.forEach( function (e) {
-                        if(!e.r || e.r!=='port') { //r - role, internal property
+                        if(!e.meta || !e.meta.role || e.meta.role!=='port') {
                             adjust = true;
                         }
                     });
                 }
+                
                 //move label to top
                 if(adjust) {
                     style += ';verticalAlign=top';
                 }
-                if(cell.k && _metamodel) {
-                    var tc = _metamodel.elements.filter(function f(e) {return e.id == cell.k})[0];
+                if(cell.meta.kind && _metamodel) {
+                    var tc = _metamodel.elements.filter(function f(e) {return e.id == cell.meta.kind})[0];
                     if(tc) {
                         style+=";shape=image;image="+tc.image+";";
                     }
                 }
+                if(cell.meta.role && cell.meta.role ==='port') {
+                    //draw port input/output image
+                    if(cell.meta.direction) {
+                        if(cell.meta.direction === 'input') {
+                            style+=";shape=image;image=images/port_in.svg;";
+                        } 
+                        if(cell.meta.direction === 'output') {
+                            style+=";shape=image;image=images/port_out.svg;";
+                        }
+
+                        if(cell.meta.position==='b') {
+                            style+=";rotation=90";
+                        } else if(cell.meta.position==='l') {
+                            style+=";rotation=180";
+                        } else if(cell.meta.position==='t') {
+                            style+=";rotation=-90";
+                        }
+                    }
+                }
             }
-            
             return style;
         }
         return null;
     };
 
     graph.isCellMovable = function(cell) {
-        if(cell.r=="lbl") {
+        if(cell.meta && cell.meta.role==="lbl") {
             return false;
         }
         return true;				
     }
 
     graph.isCellConnectable = function(cell) {
-        if(cell.r=="lbl") {
+        if(cell.meta && cell.meta.role=="lbl") {
             return false;
         }
         return true;				
@@ -452,8 +471,17 @@ function main(container, outline, toolbar, sidebar, status) {
     */
 };
 
-
-function addPort(graph, cell, x, y,pos=+'l', id, lbl) {
+/**
+ * Add a port to a cell
+ * @param {*} graph 
+ * @param {*} cell 
+ * @param {*} x 
+ * @param {*} y 
+ * @param {*} pos 
+ * @param {*} id 
+ * @param {*} lbl 
+ */
+function addPort(graph, cell, x, y,pos='l', id, lbl) {
     //console.log(id + ", " + lbl);
     graph.model.beginUpdate();
     serial++;
@@ -466,13 +494,15 @@ function addPort(graph, cell, x, y,pos=+'l', id, lbl) {
     }
     var port = graph.insertVertex(cell, id, null, x, y, 16, 16,
         'image=editors/images/rectangle.gif;align=right;imageAlign=right;verticalLabelPosition=bottom;verticalAlign=top', true);
+    port.meta={};
     var lbl = graph.insertVertex(port, id, lbl, x, y, 0, 0,
         'align=right;imageAlign=right;resizable=0;dragEnabled=0;', false);
-    lbl.r = 'lbl';
+    lbl.meta= {};
+    lbl.meta.role = 'lbl';
     lbl.setConnectable(true);
     port.geometry.offset = new mxPoint(-6, -8);
-    port.r = "port";
-    port.pos=pos;
+    port.meta.role='port';
+    port.meta.position=pos;
     graph.model.endUpdate();
 }
 
@@ -482,36 +512,51 @@ function addPort(graph, cell, x, y,pos=+'l', id, lbl) {
  */
 function createPopupMenu(graph, menu, cell, evt) {
     if (cell != null) {
-        if(cell.r && cell.r === "port") {
+        if(cell.meta.role && cell.meta.role === 'port') {
+            menu.addItem('Input', 'images/application_get.png', function() {
+                cell.meta.direction='input';
+                graph.getView().clear(cell, false, false);
+                graph.getView().validate();
+            });
+            menu.addItem('Output', 'images/application_put.png', function() {
+                cell.meta.direction='output';
+                graph.getView().clear(cell, false, false);
+                graph.getView().validate();
+            });
+            menu.addItem('Reset', 'images/table_refresh.png', function() {
+                delete cell.meta.direction;
+                graph.getView().clear(cell, false, false);
+                graph.getView().validate();
+            });
+            menu.addSeparator();            
             menu.addItem('Remove', 'images/delete2.png', function() {
-            graph.model.beginUpdate();
-            graph.removeCells([cell]);
-            graph.model.endUpdate();
-        });
+                graph.model.beginUpdate();
+                graph.removeCells([cell]);
+                graph.model.endUpdate();
+            });
         } else {
             initCellPorts(cell);
-            menu.addItem('Add port Right', 'images/right.png', function() {
-                cell.cr++;
-                addPort(graph, cell, 1,0.1 + 0.2*(cell.cr-1),'r');
-            });
-
-            menu.addItem('Add port Left', 'images/left.png', function() {
-                cell.cl++;
-                addPort(graph, cell, 0, 0.1 + 0.2*(cell.cl-1),'l');
-            });
             menu.addItem('Add port Top', 'images/up.png', function() {
-                cell.ct++;
-                addPort(graph, cell, 0.1 + 0.2*(cell.ct-1), 0,'t');
+                cell.meta.ports_top++;
+                addPort(graph, cell, 0.1 + 0.2*(cell.meta.ports_top-1), 0,'t');
+            });
+            menu.addItem('Add port Right', 'images/right.png', function() {
+                cell.meta.ports_right++;
+                addPort(graph, cell, 1,0.1 + 0.2*(cell.meta.ports_right-1),'r');
             });
             menu.addItem('Add port Bottom', 'images/down.png', function() {
-                cell.cb++;
-                addPort(graph, cell, 0.1 + 0.2*(cell.cb-1), 1,'b');
+                cell.meta.ports_bottom++;
+                addPort(graph, cell, 0.1 + 0.2*(cell.meta.ports_bottom-1), 1,'b');
             });
+            menu.addItem('Add port Left', 'images/left.png', function() {
+                cell.meta.ports_left++;
+                addPort(graph, cell, 0, 0.1 + 0.2*(cell.meta.ports_left-1),'l');
+            });
+            menu.addSeparator();            
             menu.addItem('Spec', 'images/edit.png', function() {
                 showSpec(cell, graph);
             });
-        }
-        
+        }        
     }
 };
 
@@ -524,8 +569,8 @@ function createPopupMenu(graph, menu, cell, evt) {
 function showSpec(cell, graph) {
     var tb = document.createElement('textarea');
     //set the window content, if present
-    if(cell.spec) {
-        tb.value = cell.spec;
+    if(cell.meta.specification) {
+        tb.value = cell.meta.specification;
     }
     tb.style.width=200;
     tb.style.height=200;
@@ -537,7 +582,7 @@ function showSpec(cell, graph) {
     wnd.setVisible(true);
     wnd.setClosable(true)
     wnd.addListener(mxEvent.CLOSE, function(sender, evt) { 
-        cell.spec = tb.value;
+        cell.meta.specification = tb.value;
         var overlays = graph.getCellOverlays(cell);
         processOverlay(cell, graph);
     });
@@ -549,12 +594,9 @@ function showSpec(cell, graph) {
  */
 function processOverlay(cell, graph) {
     //if cell has specification
-    if (cell.spec!=='') {
+    if (cell.meta.specification && cell.meta.specification!=='') {
         // Creates a new overlay with an image and a tooltip
-        var overlay = new mxCellOverlay(new mxImage('editors/images/overlays/comment.png', 16, 16), cell.spec);
-        //overlay.verticalAlign = mxConstants.ALIGN_MIDDLE;
-        //overlay.align = mxConstants.ALIGN_CENTER;
-        // Installs a handler for clicks on the overlay		
+        var overlay = new mxCellOverlay(new mxImage('editors/images/overlays/comment.png', 16, 16), cell.meta.specification);
         overlay.addListener(mxEvent.CLICK, function(sender, evt2) {
             showSpec(cell, graph);
         });
@@ -594,7 +636,9 @@ function addToolbarButton(editor, toolbar, action, label, image, isTransparent)
 
 
 /**
- * Export the model to EMDL json
+ * Export the model to JSON
+ * @param {*} editor 
+ * @param {*} cell 
  */
 function exportToJson(editor, cell) {
     //create the representation
@@ -623,8 +667,8 @@ function exportToJson(editor, cell) {
         if(model.cells[k].value && !model.cells[k].edge) {
             var tcell = model.cells[k];
             var s = {};
-            s.id=tcell.value;
-            if(tcell.parent && tcell.parent.r && tcell.parent.r==='port') {
+            s.id=tcell.id;
+            if(tcell.parent && tcell.parent.meta && tcell.parent.meta.role && tcell.parent.meta.role==='port') {
                 s.id = tcell.parent.id;
             }
             s.value=tcell.value;
@@ -632,26 +676,37 @@ function exportToJson(editor, cell) {
             s.y = tcell.geometry.y;
             s.width = tcell.geometry.width;
             s.height = tcell.geometry.height;
-            if(tcell.spec) {
-                s.spec = tcell.spec;
+
+            if(tcell.meta) {
+                if(tcell.meta.specification) {
+                    s.specification = tcell.meta.specification;
+                }
+                if(tcell.meta.kind) {
+                    s.kind = tcell.meta.kind;
+                }
             }
 
-            if(tcell.parent.r && tcell.parent.r==='port') {
-                s.role = 'port';
-                s.position = tcell.parent.pos;
-            }
+            //handle parent properties
+            if(tcell.parent.meta) {
+                if(tcell.parent.meta.position) {
+                    s.position = tcell.parent.meta.position;
+                }
+                if(tcell.parent.meta && tcell.parent.meta.role) {
+                    s.role = tcell.parent.meta.role;
+                }
 
-            if(tcell.k) {
-                s.kind = tcell.k;
-            }
-
-            //set parent
-            if(tcell.parent) {
-                if(tcell.parent.r && tcell.parent.r === 'port') {
+                if(tcell.parent.meta.role && tcell.parent.meta.role === 'port') {
                     //parent of port label is a rectangle with no value
                     s.parent=tcell.parent.parent.value;
                 } else {
                     s.parent=tcell.parent.value;
+                }
+
+                if(tcell.parent.meta.position) {
+                    s.position = tcell.parent.meta.position;
+                }
+                if(tcell.parent.meta.direction) {
+                    s.direction = tcell.parent.meta.direction;
                 }
             }
             
@@ -662,7 +717,7 @@ function exportToJson(editor, cell) {
                     if(c.value) {
                         s.children.push(c.value);
                     }
-                    if(c.r && c.r==='port') {
+                    if(c.meta && c.meta.role && c.meta.role==='port') {
                         s.children.push(c.id);
                     }
                 });
@@ -694,7 +749,7 @@ function exportToJson(editor, cell) {
             t.target = s;					
             json.chart.transitions.push(t);
         }
-    });					
+    });
 
     json = JSON.stringify(json);
     console.log(json);
@@ -770,25 +825,30 @@ function initCellPorts(cell) {
         return;
     }
     //right
-    if(!cell.cr) {
-        cell.cr = 0;
+    if(!cell.meta.ports_right) {
+        cell.meta.ports_right=0;
     }
     //left	
-    if(!cell.cl) {
-        cell.cl = 0;
+    if(!cell.meta.ports_left) {
+        cell.meta.ports_left=0;
     }	
     //top					
-    if(!cell.ct) {
-        cell.ct = 0;
+    if(!cell.meta.ports_top) {
+        cell.meta.ports_top=0;
     }
     //bottom
-    if(!cell.cb) {
-        cell.cb = 0;
+    if(!cell.meta.ports_bottom) {
+        cell.meta.ports_bottom=0;
     }			
 }
 
 
-
+/**
+ * Aux method for model import
+ * @param {*} states 
+ * @param {*} cell 
+ * @param {*} parent 
+ */
 function processCell(states, cell, parent) {
     if(cell.drawn) {
         return;
@@ -798,15 +858,19 @@ function processCell(states, cell, parent) {
             initCellPorts(cell);
             if(cell.position==='l') {
                 cell.cl++; 
+                cell.meta.ports_left++;
             }
             if(cell.position==='r') {
                 cell.cr++; 
+                cell.meta.ports_right++;
             }
             if(cell.position==='b') {
                 cell.cb++; 
+                cell.meta.ports_bottom++;
             }
             if(cell.position==='t') {
                 cell.ct++; 
+                cell.meta.ports_top++;
             }
             addPort(_graph,parent,cell.x,cell.y,cell.position, cell.id, cell.value);
         } else {
@@ -815,6 +879,7 @@ function processCell(states, cell, parent) {
     } else {
         if(parent || !cell.parent) {
             var v1 = _graph.insertVertex(parent, cell.id, cell.id, cell.x, cell.y, cell.width, cell.height);
+            v1.meta = {};
         } else {
             return;
         }
@@ -827,15 +892,18 @@ function processCell(states, cell, parent) {
     cell.drawn = true;
     if(cell.spec && v1) {
         v1.spec = cell.spec;
+        v1.meta.spec = cell.spec;
         processOverlay(v1,_graph);
     }
 
     if(cell.kind && v1) {
         v1.k = cell.kind;
+        v1.meta.kind = cell.kind;
     }
 
     if(cell.role && v1) {
         v1.r = cell.role;
+        v1.meta.role = cell.role;
     }
     
     var model = _graph.getModel();
@@ -877,7 +945,14 @@ function buildModel(json) {
     }
 }
 
-
+/**
+ * Create a modal window to show content
+ * @param {*} graph 
+ * @param {*} title 
+ * @param {*} content 
+ * @param {*} width 
+ * @param {*} height 
+ *
 function showModalWindow(graph, title, content, width, height)
 {
     var background = document.createElement('div');
@@ -890,29 +965,26 @@ function showModalWindow(graph, title, content, width, height)
     mxUtils.setOpacity(background, 50);
     document.body.appendChild(background);
     
-    if (mxClient.IS_IE)
-    {
+    if (mxClient.IS_IE) {
         new mxDivResizer(background);
     }
     
     var x = Math.max(0, document.body.scrollWidth/2-width/2);
-    var y = Math.max(10, (document.body.scrollHeight ||
-                document.documentElement.scrollHeight)/2-height*2/3);
+    var y = Math.max(10, (document.body.scrollHeight || document.documentElement.scrollHeight)/2-height*2/3);
     var wnd = new mxWindow(title, content, x, y, width, height, false, true);
     wnd.setClosable(true);
-    
+
     // Fades the background out after after the window has been closed
     wnd.addListener(mxEvent.DESTROY, function(evt)
     {
         graph.setEnabled(true);
-        mxEffects.fadeOut(background, 50, true, 
-            10, 30, true);
+        mxEffects.fadeOut(background, 50, true, 10, 30, true);
     });
 
     graph.setEnabled(false);
     graph.tooltipHandler.hide();
     wnd.setVisible(true);
-};
+};*/
 
 /**
  * Create sidebar icon
@@ -921,9 +993,7 @@ function addSidebarIcon(graph, sidebar, label, image, id) {
     // Function that is executed when the image is dropped on
     // the graph. The cell argument points to the cell under
     // the mousepointer if there is one.
-    var funct = function(graph, evt, cell, x, y) {
-        console.log(this.id);
-        
+    var funct = function(graph, evt, cell, x, y) {        
         var parent = graph.getDefaultParent();
         var model = graph.getModel();
         var v1 = null;
@@ -932,6 +1002,9 @@ function addSidebarIcon(graph, sidebar, label, image, id) {
             v1 = graph.insertVertex(parent, null, label, x, y, 80, 60);
             v1.setConnectable(true); 
             v1.k = this.id;
+            //TODO: set component label
+            v1.meta={};
+            v1.meta.kind = this.id;
         } finally {
             model.endUpdate();
         }        
