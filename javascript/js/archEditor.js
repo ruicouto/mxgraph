@@ -418,14 +418,14 @@ function main(container, outline, toolbar, sidebar, status) {
     };
 
     graph.isCellMovable = function(cell) {
-        if(cell.meta && cell.meta.role==="lbl") {
+        if(cell && cell.meta && cell.meta.role==="lbl") {
             return false;
         }
         return true;				
     }
 
     graph.isCellConnectable = function(cell) {
-        if(cell.meta && cell.meta.role=="lbl") {
+        if(cell && cell.meta && cell.meta.role=="lbl") {
             return false;
         }
         return true;				
@@ -509,6 +509,13 @@ function addPort(graph, cell, x, y,pos='l', id, lbl, dir) {
     graph.model.endUpdate();
 }
 
+
+/**
+ * Clear all elements
+ */
+function reset(graph=_graph) {
+    graph.removeCells(graph.getChildVertices(graph.getDefaultParent()))
+}
 
 /**
  * Create the popup menu
@@ -737,14 +744,14 @@ function exportToJson(editor, cell) {
             
 
             var s = {};
-            s.id = model.cells[k].source.value;
+            s.id = model.cells[k].source.id;
             if(model.cells[k].source.meta.role==='port') {
                 s.id = model.cells[k].source.id;
             }
             t.source = s;
             
             var s = {};
-            s.id = model.cells[k].target.value;
+            s.id = model.cells[k].target.id;
             if(model.cells[k].target.meta.role==='port') {
                 s.id = model.cells[k].target.id;
             }
@@ -778,6 +785,7 @@ function exportToJson(editor, cell) {
  * Handle file open event
  */
 function handleFileSelect(evt) {
+    reset();
     var files = evt.target.files; // FileList object
     var output = [];
     
@@ -920,6 +928,7 @@ function processCell(states, cell, parent) {
 
 /**
  * Create the visual representation from an emdl file
+ * @param {*} json 
  */
 function buildModel(json) {
     console.log(json);
