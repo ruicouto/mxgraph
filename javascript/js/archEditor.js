@@ -266,13 +266,16 @@ function main(container, outline, toolbar, sidebar, status) {
 
         //Define import model action
         document.getElementById('files').addEventListener('change', handleFileSelect, false);
-        editor.addAction('import', function(editor, cell) {					
-            var elem = document.getElementById("files");
-            if(elem && document.createEvent) {
-               var evt = document.createEvent("MouseEvents");
-               evt.initEvent("click", true, false);
-               elem.dispatchEvent(evt);
-            }
+        editor.addAction('import', function(editor, cell) {
+            var isEmpty = _graph.getChildVertices(_graph.getDefaultParent()).length==0;
+            if (isEmpty || confirm("Current model will be discarded!") == true) {
+                var elem = document.getElementById("files");
+                if(elem && document.createEvent) {
+                var evt = document.createEvent("MouseEvents");
+                evt.initEvent("click", true, false);
+                elem.dispatchEvent(evt);
+                }
+            }  
         });
         addToolbarButton(editor, toolbar, 'import', 'Open model', 'images/folder.png');
         
@@ -514,7 +517,7 @@ function addPort(graph, cell, x, y,pos='l', id, lbl, dir) {
  * Clear all elements
  */
 function reset(graph=_graph) {
-    graph.removeCells(graph.getChildVertices(graph.getDefaultParent()))
+    graph.removeCells(graph.getChildVertices(graph.getDefaultParent()));
 }
 
 /**
@@ -797,7 +800,7 @@ function handleFileSelect(evt) {
                     buildModel(JSON.parse(text));
                 } catch(err) {
                     console.log(err);
-                    console.log("Invalid spec file");
+                    mxUtils.alert('Invalid specification file');
                 }
             }
             reader.readAsText(f, "utf-8");
@@ -820,7 +823,8 @@ function handleMetamodelSelect(evt) {
                         addSidebarIcon(_graph, _sidebar,f.name,f.image,f.id);
                     });
                 } catch(err) {
-                    console.log("Invalid metamodel")
+                    console.log("Invalid metamodel");
+                    mxUtils.alert('Invalid metamodel file');
                 }
             }
             reader.readAsText(f, "utf-8");
