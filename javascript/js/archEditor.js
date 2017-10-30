@@ -341,7 +341,7 @@ function main(container, outline, toolbar, sidebar, status) {
                 var dash = false;
                 if(target && target.children) {
                     target.children.forEach(function (c){
-                        if(c.meta.role==='port') {
+                        if(c.meta && c.meta.role==='port') {
                             dash = true;
                         }
                     });
