@@ -481,7 +481,7 @@ function main(container, outline, toolbar, sidebar, status) {
  * @param {*} id 
  * @param {*} lbl 
  */
-function addPort(graph, cell, x, y,pos='l', id, lbl) {
+function addPort(graph, cell, x, y,pos='l', id, lbl, dir) {
     //console.log(id + ", " + lbl);
     graph.model.beginUpdate();
     serial++;
@@ -503,6 +503,9 @@ function addPort(graph, cell, x, y,pos='l', id, lbl) {
     port.geometry.offset = new mxPoint(-6, -8);
     port.meta.role='port';
     port.meta.position=pos;
+    if(dir) {
+        port.meta.direction = dir;
+    }
     graph.model.endUpdate();
 }
 
@@ -715,7 +718,7 @@ function exportToJson(editor, cell) {
                 s.children=[];
                 tcell.children.forEach(function (c) {
                     if(c.value) {
-                        s.children.push(c.value);
+                        s.children.push(c.id);
                     }
                     if(c.meta && c.meta.role && c.meta.role==='port') {
                         s.children.push(c.id);
@@ -729,23 +732,22 @@ function exportToJson(editor, cell) {
         //edges
         if(model.cells[k].edge) {
             var t = {};
-            t.id = model.cells[k].value;
+            t.id = model.cells[k].id;
             t.name = model.cells[k].value;
             
 
             var s = {};
             s.id = model.cells[k].source.value;
-            if(model.cells[k].source.r==='port') {
+            if(model.cells[k].source.meta.role==='port') {
                 s.id = model.cells[k].source.id;
             }
             t.source = s;
             
             var s = {};
             s.id = model.cells[k].target.value;
-            if(model.cells[k].target.r==='port') {
+            if(model.cells[k].target.meta.role==='port') {
                 s.id = model.cells[k].target.id;
             }
-
             t.target = s;					
             json.chart.transitions.push(t);
         }
@@ -760,7 +762,7 @@ function exportToJson(editor, cell) {
     dlAnchorElem.setAttribute("download", "model.json");
     dlAnchorElem.click();
 
-    //TODO show window
+    //TODO show window ?
     /*
     var textarea = document.createElement('textarea');
     textarea.style.width = '400px';
@@ -786,6 +788,7 @@ function handleFileSelect(evt) {
                     var text = reader.result;
                     buildModel(JSON.parse(text));
                 } catch(err) {
+                    console.log(err);
                     console.log("Invalid spec file");
                 }
             }
@@ -824,6 +827,9 @@ function initCellPorts(cell) {
     if(!cell) {
         return;
     }
+    if(!cell.meta) {
+        cell.meta = {};
+    }
     //right
     if(!cell.meta.ports_right) {
         cell.meta.ports_right=0;
@@ -850,35 +856,31 @@ function initCellPorts(cell) {
  * @param {*} parent 
  */
 function processCell(states, cell, parent) {
-    if(cell.drawn) {
+    if(!cell || cell.drawn) {
         return;
     }
     if(cell.role && cell.role==='port') {
         if(parent) {
             initCellPorts(cell);
             if(cell.position==='l') {
-                cell.cl++; 
                 cell.meta.ports_left++;
             }
             if(cell.position==='r') {
-                cell.cr++; 
                 cell.meta.ports_right++;
             }
             if(cell.position==='b') {
-                cell.cb++; 
                 cell.meta.ports_bottom++;
             }
             if(cell.position==='t') {
-                cell.ct++; 
                 cell.meta.ports_top++;
             }
-            addPort(_graph,parent,cell.x,cell.y,cell.position, cell.id, cell.value);
+            addPort(_graph,parent,cell.x,cell.y, cell.position, cell.id, cell.value, cell.direction);
         } else {
             return;
         }        
     } else {
         if(parent || !cell.parent) {
-            var v1 = _graph.insertVertex(parent, cell.id, cell.id, cell.x, cell.y, cell.width, cell.height);
+            var v1 = _graph.insertVertex(parent, cell.id, cell.value, cell.x, cell.y, cell.width, cell.height);
             v1.meta = {};
         } else {
             return;
@@ -911,7 +913,7 @@ function processCell(states, cell, parent) {
     if(cell.children) {
         cell.children.forEach(function (c) {
             var tc = states.filter(function f(e) {return e.id == c})[0];
-            processCell(states, tc, v1);					
+            processCell(states, tc, v1);
         });
     }
 }
@@ -935,7 +937,7 @@ function buildModel(json) {
         json.chart.transitions.forEach(function(t) {
             var sv = model.getCell(t.source.id);
             var tv = model.getCell(t.target.id);
-            var e1 = _graph.insertEdge(parent, t.id, t.id, sv, tv);
+            var e1 = _graph.insertEdge(parent, t.id, t.value, sv, tv);
         });
         serial = json.descriptor.serial;
     }
