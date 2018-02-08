@@ -52,25 +52,24 @@ function main(container, outline, toolbar, sidebar, status) {
         var model = graph.getModel();
         _graph = graph;
 
-        // Disable highlight of cells when dragging from toolbar
+        //enable cells to be dropped into other
         graph.setDropEnabled(true);
-    
         //allow loops
         graph.setAllowLoops(true);
+        // Does not allow dangling edges
+        graph.setAllowDanglingEdges(false);
+        
 
         // Show icon while connections are previewed
         graph.connectionHandler.getConnectImage = function(state) {
             return new mxImage(state.style[mxConstants.STYLE_IMAGE], 16, 16);
         };
-
         // Centers the port icon on the target port
         graph.connectionHandler.targetConnectImage = true;
 
-        // Does not allow dangling edges
-        graph.setAllowDanglingEdges(false);
-
         // Sets the graph container and configures the editor
         editor.setGraphContainer(container);
+        //Load keyboard shortcuts
         var config = mxUtils.load('editors/config/keyhandler-commons.xml').getDocumentElement();
         editor.configure(config);
         
@@ -87,8 +86,14 @@ function main(container, outline, toolbar, sidebar, status) {
 
         //configure drop targets
         graph.isValidDropTarget = function(cell, cells, evt) {
+            /*s.l("DROP allowed:")
+            s.l(cell);
+            s.l(cells);
+            s.l("----");*/
+            //TODO: allow only for leafs in containers, and in ports
             return true; //will allow all, for now
         };
+        
         
         // Disables drilling into non-swimlanes.
         graph.isValidRoot = function(cell) {
@@ -178,7 +183,9 @@ function main(container, outline, toolbar, sidebar, status) {
         // be used. For example, the first call to addSidebar icon would
         // be as follows:
         // addSidebarIcon(graph, sidebar, 'Website', 'images/icons48/earth.png');
-        addSidebarIcon(graph, sidebar,'Component','images/icons48/sig.png','component');
+        addSidebarIcon(graph, sidebar,'Component','images/icons48/sig.png','component','component');
+        addSidebarIcon(graph, sidebar,'Container','images/icons48/sig.png','container','container');
+        addSidebarIcon(graph, sidebar,'Port','images/port.svg','port','port');
         
         //addSidebarIcon(graph, sidebar,'Leaf','images/icons48/leaf.svg','leaf');
         
@@ -336,7 +343,7 @@ function main(container, outline, toolbar, sidebar, status) {
         if (cell != null) {
             var style = previous.apply(this, arguments);
             if (this.isEdge(cell)) {
-                
+                s.l("IS AN EDGE");
                 var target = this.getTerminal(cell, false);
                 var source = this.getTerminal(cell, true);
                 style = 'strokeWidth=2;strokeColor=black;';
@@ -375,28 +382,37 @@ function main(container, outline, toolbar, sidebar, status) {
                 }
 
             } else if (this.isVertex(cell)) {
+                //s.l("IS A VERTEX");
+                
                 var geometry = this.getGeometry(cell);
                 var adjust = false; //adjust label position
-                if (cell.children) {
+                /*if (cell.children) {
                     cell.children.forEach( function (e) {
                         if(!e.meta || !e.meta.role || e.meta.role!=='port') {
                             adjust = true;
                         }
                     });
-                }
+                }*/
                 
                 //move label to top
                 if(adjust) {
                     style += ';verticalAlign=top';
                 }
-                if(cell.meta.kind && _metamodel) {
+                if(cell.meta && cell.meta.kind ) {
+                    
+                    if(cell.meta.kind === 'port') {
+                        style+=";shape=image;image=images/port.svg;";
+                    } else if (cell.meta.kind === 'container') {
+                        style += ';verticalAlign=top';
+                    }
+                    
                     //set the node style
                     /*var tc = _metamodel.elements.filter(function f(e) {return e.id == cell.meta.kind})[0];
                     if(tc) {
                         style+=";shape=image;image="+tc.image+";";
                     }*/
                 }
-                if(cell.meta.role && cell.meta.role ==='port') {
+                if(cell.meta && cell.meta.role && cell.meta.role ==='port') {
                     //draw port input/output image
                     if(cell.meta.direction) {
                         if(cell.meta.direction === 'input') {
@@ -422,14 +438,14 @@ function main(container, outline, toolbar, sidebar, status) {
     };
 
     graph.isCellMovable = function(cell) {
-        if(cell && cell.meta && cell.meta.role==="lbl") {
+        if(cell && cell.meta && cell.meta.role && cell.meta.role==="lbl") {
             return false;
         }
         return true;				
     }
 
     graph.isCellConnectable = function(cell) {
-        if(cell && cell.meta && cell.meta.role=="lbl") {
+        if(cell && cell.meta && cell.meta.role && cell.meta.role=="lbl") {
             return false;
         }
         return true;				
@@ -474,9 +490,6 @@ function main(container, outline, toolbar, sidebar, status) {
     graphComponent.getConnectionHandler().addListener(mxEvent.CONNECT, new mxIEventListener()\n{\n  public void invoke(Object sender, mxEventObject evt)\n  {\n    System.out.println("edge="+evt.getProperty("cell"));\n  }\n});\n
     */
 };
-
-
-
 
 
 /**
@@ -843,16 +856,11 @@ function processToolbox() {    Object.keys(_metamodel).forEach(name => {
         }
          
         var kind = _metamodel[name].k;
+        
         var img;
         if(!label) {
             label = name;
         }
-        console.log("-----");
-        console.log(name);
-        console.log(label);
-        console.log(kind);
-
-        console.log("-----");
 
         if(kind==="leaf") {
             img = "images/icons48/leaf.svg";
@@ -862,7 +870,7 @@ function processToolbox() {    Object.keys(_metamodel).forEach(name => {
             img = "images/port_out.svg";
         }      
 
-        addSidebarIcon(_graph, _sidebar,name,img,label);
+        addSidebarIcon(_graph, _sidebar,name,img,label,kind);
     });
 }
 
@@ -1038,41 +1046,64 @@ function showModalWindow(graph, title, content, width, height)
 /**
  * Create sidebar icon
  */
-function addSidebarIcon(graph, sidebar, label, image, id) {
+function addSidebarIcon(graph, sidebar, label, image, id, kind) {
     // Function that is executed when the image is dropped on
     // the graph. The cell argument points to the cell under
     // the mousepointer if there is one.
-    var funct = function(graph, evt, cell, x, y) {        
-        var parent = graph.getDefaultParent();
+    var funct = function(graph, evt, cell, x, y) {
+        //if the parent is not a container
+        // graph.getCellAt(x,y);
+        if(cell && cell.meta) {
+            if(kind!=='port' && cell.meta.kind!=='container') {
+                return;
+            }
+        }
+        var parent = cell;// graph.getCellAt(x,y);
+        var dx = dy= 0;
+        if(cell) {
+            //s.l(cell);
+            dx = cell.geometry.x;
+            dy = cell.geometry.y;
+            //s.l(dx+","+dy);
+        }
+
         var model = graph.getModel();
         var v1 = null;
         model.beginUpdate();
-        try	{
-            v1 = graph.insertVertex(parent, null, label, x, y, 80, 60);
-            v1.setConnectable(true); 
-            v1.k = this.id;
-            //TODO: set component label
-            v1.meta={};
-            v1.meta.kind = this.id;
-        } finally {
-            model.endUpdate();
-        }        
-        console.log("DROPPED " + v1);
-        graph.setSelectionCell(v1);
+        if(kind!=='port') {
+            try	{
+                v1 = graph.insertVertex(parent, null, label, x-dx, y-dy, 80, 60);
+                v1.setConnectable(true); 
+                v1.k = this.id;
+                
+                //TODO: set component label
+                v1.meta={};
+                v1.meta.kind = kind;
+                v1.meta.id = this.id;
+                console.log("DROPPED " + v1);
+                graph.setSelectionCell(v1);
+            } finally {
+                model.endUpdate();
+            }       
+        }  else {
+            addPort(graph, cell, 0.1, 0, 'l');
+        }
+        model.endUpdate();
+        
     }
     
     // Creates the image which is used as the sidebar icon (drag source)
     var img = document.createElement('img');
     img.setAttribute('src', image);
-    img.style.width = '48px';
-    img.style.height = '48px';
+    img.style.width = '32px';
+    img.style.height = '32px';
     img.title = 'Drag this to the diagram to create a new vertex';
     sidebar.appendChild(img);
     
     var dragElt = document.createElement('div');
     dragElt.style.border = 'dashed gray 1px';
     dragElt.style.width = '80px';
-    dragElt.style.height = '60px';
+    dragElt.style.height = '60px';    
 
     // Creates the image which is used as the drag icon (preview)
     var ds = mxUtils.makeDraggable(img, graph, funct, dragElt, 0, 0, true, true);
@@ -1190,9 +1221,8 @@ function go() {
             img = "images/icons48/sig.png";
         } else if(kind === "port") {
             img = "images/port_out.svg";
-        }      
-
-        addSidebarIcon(_graph, _sidebar,name,img,label);
+        }
+        addSidebarIcon(_graph, _sidebar,name,img,label,kind);
     });
 }
 
