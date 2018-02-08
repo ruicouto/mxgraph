@@ -20,19 +20,47 @@ function main(container, outline, toolbar, sidebar, status) {
         // for triggering new connections, as well as some fading options for
         // windows and the rubberband selection.
         mxConstants.MIN_HOTSPOT_SIZE = 16;
-        mxConstants.DEFAULT_HOTSPOT = 1;
-        
+        mxConstants.DEFAULT_HOTSPOT = 1;        
         // Enables guides
         mxGraphHandler.prototype.guidesEnabled = true;
+        // Enables snapping waypoints to terminals
+        mxEdgeHandler.prototype.snapToTerminals = true;
+        // Creates a wrapper editor with a graph inside the given container.
+        // The editor is used to create certain functionality for the
+        // graph, such as the rubberband selection, but most parts
+        // of the UI are custom in this example.
+        var editor = new mxEditor();
+        var graph = editor.graph;
+        var model = graph.getModel();
+        _graph = graph;
+        //enable cells to be dropped into other
+        graph.setDropEnabled(true);
+        //allow loops
+        graph.setAllowLoops(true);
+        // Does not allow dangling edges
+        graph.setAllowDanglingEdges(false);
+        // Show icon while connections are previewed
+        graph.connectionHandler.getConnectImage = function(state) {
+            return new mxImage(state.style[mxConstants.STYLE_IMAGE], 16, 16);
+        };
+        // Centers the port icon on the target port
+        graph.connectionHandler.targetConnectImage = true;
+        // Enables new connections
+        graph.setConnectable(true);
+
+        // Sets the graph container and configures the editor
+        editor.setGraphContainer(container);
+        //Load keyboard shortcuts
+        var config = mxUtils.load('editors/config/keyhandler-commons.xml').getDocumentElement();
+        editor.configure(config);
+
 
         // Alt disables guides
         mxGuide.prototype.isEnabledForEvent = function(evt) {
             return !mxEvent.isAltDown(evt);
-        };
+        };  
 
-        // Enables snapping waypoints to terminals
-        mxEdgeHandler.prototype.snapToTerminals = true;
-
+        
         // Workaround for Internet Explorer ignoring certain CSS directives
         if (mxClient.IS_QUIRKS) {
             document.body.style.overflow = 'hidden';
@@ -43,35 +71,10 @@ function main(container, outline, toolbar, sidebar, status) {
             new mxDivResizer(status);
         }
         
-        // Creates a wrapper editor with a graph inside the given container.
-        // The editor is used to create certain functionality for the
-        // graph, such as the rubberband selection, but most parts
-        // of the UI are custom in this example.
-        var editor = new mxEditor();
-        var graph = editor.graph;
-        var model = graph.getModel();
-        _graph = graph;
-
-        //enable cells to be dropped into other
-        graph.setDropEnabled(true);
-        //allow loops
-        graph.setAllowLoops(true);
-        // Does not allow dangling edges
-        graph.setAllowDanglingEdges(false);
+               
         
 
-        // Show icon while connections are previewed
-        graph.connectionHandler.getConnectImage = function(state) {
-            return new mxImage(state.style[mxConstants.STYLE_IMAGE], 16, 16);
-        };
-        // Centers the port icon on the target port
-        graph.connectionHandler.targetConnectImage = true;
-
-        // Sets the graph container and configures the editor
-        editor.setGraphContainer(container);
-        //Load keyboard shortcuts
-        var config = mxUtils.load('editors/config/keyhandler-commons.xml').getDocumentElement();
-        editor.configure(config);
+        
         
         // Defines the default group to be used for grouping. The
         // default group is a field in the mxEditor instance that
@@ -86,10 +89,6 @@ function main(container, outline, toolbar, sidebar, status) {
 
         //configure drop targets
         graph.isValidDropTarget = function(cell, cells, evt) {
-            /*s.l("DROP allowed:")
-            s.l(cell);
-            s.l(cells);
-            s.l("----");*/
             //TODO: allow only for leafs in containers, and in ports
             return true; //will allow all, for now
         };
@@ -170,8 +169,7 @@ function main(container, outline, toolbar, sidebar, status) {
             mxEvent.consume(evt);
         };*/
 
-        // Enables new connections
-        graph.setConnectable(true);
+        
 
         // Adds all required styles to the graph (see below)
         configureStylesheet(graph);
@@ -849,7 +847,8 @@ function handleMetamodelSelect(evt) {
 }
 
 
-function processToolbox() {    Object.keys(_metamodel).forEach(name => {
+function processToolbox() {    
+    Object.keys(_metamodel).forEach(name => {
         var label = name;
         if(_metamodel[name].props &&  _metamodel[name].props.label) {
             label = _metamodel[name].props.label;
@@ -1059,6 +1058,7 @@ function addSidebarIcon(graph, sidebar, label, image, id, kind) {
             }
         }
         var parent = cell;// graph.getCellAt(x,y);
+        s.l(parent);
         var dx = dy= 0;
         if(cell) {
             //s.l(cell);
@@ -1087,8 +1087,9 @@ function addSidebarIcon(graph, sidebar, label, image, id, kind) {
             }       
         }  else {
             addPort(graph, cell, 0.1, 0, 'l');
+            model.endUpdate();
         }
-        model.endUpdate();
+        
         
     }
     
