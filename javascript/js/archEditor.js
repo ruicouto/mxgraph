@@ -390,10 +390,11 @@ function main(container, outline, toolbar, sidebar, status) {
                     style += ';verticalAlign=top';
                 }
                 if(cell.meta.kind && _metamodel) {
-                    var tc = _metamodel.elements.filter(function f(e) {return e.id == cell.meta.kind})[0];
+                    //set the node style
+                    /*var tc = _metamodel.elements.filter(function f(e) {return e.id == cell.meta.kind})[0];
                     if(tc) {
                         style+=";shape=image;image="+tc.image+";";
-                    }
+                    }*/
                 }
                 if(cell.meta.role && cell.meta.role ==='port') {
                     //draw port input/output image
@@ -473,6 +474,10 @@ function main(container, outline, toolbar, sidebar, status) {
     graphComponent.getConnectionHandler().addListener(mxEvent.CONNECT, new mxIEventListener()\n{\n  public void invoke(Object sender, mxEventObject evt)\n  {\n    System.out.println("edge="+evt.getProperty("cell"));\n  }\n});\n
     */
 };
+
+
+
+
 
 /**
  * Add a port to a cell
@@ -816,13 +821,11 @@ function handleMetamodelSelect(evt) {
             var text = reader.result;
             reader.onload = function(e) {
                 try {
-                    //console.log(reader.result);
-                    _metamodel = JSON.parse(reader.result);
-                    _metamodel.elements.forEach(function (f) {
-                        console.log(f);
-                        addSidebarIcon(_graph, _sidebar,f.name,f.image,f.id);
-                    });
+                    _metamodel = Metamodel.parse(reader.result);
+                    processToolbox();
+                    console.log("metamodel imported");
                 } catch(err) {
+                    console.log(err);
                     console.log("Invalid metamodel");
                     mxUtils.alert('Invalid metamodel file');
                 }
@@ -830,6 +833,37 @@ function handleMetamodelSelect(evt) {
             reader.readAsText(f, "utf-8");
         }
     
+}
+
+
+function processToolbox() {    Object.keys(_metamodel).forEach(name => {
+        var label = name;
+        if(_metamodel[name].props &&  _metamodel[name].props.label) {
+            label = _metamodel[name].props.label;
+        }
+         
+        var kind = _metamodel[name].k;
+        var img;
+        if(!label) {
+            label = name;
+        }
+        console.log("-----");
+        console.log(name);
+        console.log(label);
+        console.log(kind);
+
+        console.log("-----");
+
+        if(kind==="leaf") {
+            img = "images/icons48/leaf.svg";
+        } else if(kind === "container") {
+            img = "images/icons48/sig.png";
+        } else if(kind === "port") {
+            img = "images/port_out.svg";
+        }      
+
+        addSidebarIcon(_graph, _sidebar,name,img,label);
+    });
 }
 
 /**
@@ -1023,6 +1057,7 @@ function addSidebarIcon(graph, sidebar, label, image, id) {
         } finally {
             model.endUpdate();
         }        
+        console.log("DROPPED " + v1);
         graph.setSelectionCell(v1);
     }
     
@@ -1120,7 +1155,6 @@ function configureStylesheet(graph)
     style[mxConstants.STYLE_IMAGE_HEIGHT] = '16';
     graph.getStylesheet().putCellStyle('port', style);
     
-
     style = graph.getStylesheet().getDefaultEdgeStyle();
     style[mxConstants.STYLE_LABEL_BACKGROUNDCOLOR] = '#FFFFFF';
     style[mxConstants.STYLE_STROKEWIDTH] = '2';
@@ -1128,3 +1162,37 @@ function configureStylesheet(graph)
     style[mxConstants.STYLE_STROKECOLOR] = "#000";
     style[mxConstants.STYLE_ENDARROW] = "none";
 };
+
+
+function go() {
+    _metamodel = Metamodel.parse("--@container  \nabstract sig Comp { ... } \n--@leaf\nabstract sig Leaf { ... }\n--@port(kind=I/O/IO, from=[OutP, InP], to=[InP],  prop = {color=red, label=Porta}) \nabstract sig InP, OutP { ... }");
+    Object.keys(_metamodel).forEach(name => {
+        var label = name;
+        if(_metamodel[name].props &&  _metamodel[name].props.label) {
+            label = _metamodel[name].props.label;
+        }
+         
+        var kind = _metamodel[name].k;
+        var img;
+        if(!label) {
+            label = name;
+        }
+        console.log("-----");
+        console.log(name);
+        console.log(label);
+        console.log(kind);
+
+        console.log("-----");
+
+        if(kind==="leaf") {
+            img = "images/icons48/leaf.svg";
+        } else if(kind === "container") {
+            img = "images/icons48/sig.png";
+        } else if(kind === "port") {
+            img = "images/port_out.svg";
+        }      
+
+        addSidebarIcon(_graph, _sidebar,name,img,label);
+    });
+}
+
