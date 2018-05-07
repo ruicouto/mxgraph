@@ -1,8 +1,10 @@
 class Metamodel {
+
     static parse(metamodel) {
 
         var pmmodel = {};
 
+        var params = {};
 
         var print = false;
         var annotation = "";
@@ -26,6 +28,12 @@ class Metamodel {
             if(l.match(/--@port/)) {
                 kind = "port";
                 print = true;
+                /*l.split("(")[1].split(")")[0].split(",").forEach(p=>{
+                    var k = p.split("=")[0].trim();
+                    var v = p.split("=")[1].trim();
+                    params[k] = v;
+                });*/
+                //params
             }
 
             if(l.match(/.* *sig *.*/g)) {
@@ -38,7 +46,7 @@ class Metamodel {
 
                 var props = {};
                 var match = annotation.match(/--@([a-z]+) *(\(.*\))? */)
-                
+
                 if(match) {
                     var knd = match[1];
                     var prs = match[2];
@@ -48,6 +56,7 @@ class Metamodel {
                         var prs = prs.slice(1,prs.length-1).escape(["{","["],["}","]"],",",";");
                         var prs = prs.escape(["{","["],["}","]"],"=","^");
                         prs.split(",").forEach(p => {
+                            console.log("P>> " + p);
                             p = p.trim();
                             var k = p.split("=")[0].trim();
                             var v = p.split("=")[1].trim();
@@ -71,8 +80,16 @@ class Metamodel {
                     }
 
                 }
+                Object.keys(params).forEach(k=>{
+                    props[k] = params[k];
+                });
                 names.forEach(n=> {
-                    pmmodel[n] = props;
+                    var nprop = {};
+                    Object.keys(props).forEach(k=>{
+                        nprop[k] = props[k];
+                    });
+                    nprop.name = n;
+                    pmmodel[n] = nprop;
                 });
                 //cleanup
                 annotation = "";

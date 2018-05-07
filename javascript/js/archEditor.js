@@ -54,7 +54,6 @@ function main(container, outline, toolbar, sidebar, status) {
         var config = mxUtils.load('editors/config/keyhandler-commons.xml').getDocumentElement();
         editor.configure(config);
 
-
         // Alt disables guides
         mxGuide.prototype.isEnabledForEvent = function(evt) {
             return !mxEvent.isAltDown(evt);
@@ -70,12 +69,7 @@ function main(container, outline, toolbar, sidebar, status) {
             new mxDivResizer(sidebar);
             new mxDivResizer(status);
         }
-        
-               
-        
 
-        
-        
         // Defines the default group to be used for grouping. The
         // default group is a field in the mxEditor instance that
         // is supposed to be a cell which is cloned for new cells.
@@ -284,6 +278,13 @@ function main(container, outline, toolbar, sidebar, status) {
         });
         addToolbarButton(editor, toolbar, 'import', 'Open model', 'images/folder.png');
         
+        //generate alloy action
+        editor.addAction('exportAlloy', function(editor, cell) {
+            exportAlloy(graph);
+        });
+        addToolbarButton(editor, toolbar, 'exportAlloy', 'Export to Alloy', 'images/press32.png');
+
+
         // Adds toolbar buttons into the status bar at the bottom
         // of the window.
         addToolbarButton(editor, status, 'collapseAll', 'Collapse All', 'images/navigate_minus.png', true);
@@ -489,7 +490,6 @@ function main(container, outline, toolbar, sidebar, status) {
     */
 };
 
-
 /**
  * Add a port to a cell
  * @param {*} graph 
@@ -500,8 +500,15 @@ function main(container, outline, toolbar, sidebar, status) {
  * @param {*} id 
  * @param {*} lbl 
  */
-function addPort(graph, cell, x, y,pos='l', id, lbl, dir) {
+function addPort(graph, cell, x, y, pos='l', id, lbl, params) {
     //console.log(id + ", " + lbl);
+    if(!cell.meta.ports) {
+        cell.meta.ports = {};
+    }
+    if(!cell.meta.ports[pos]) {
+        cell.meta.ports[pos] = 0;
+    }
+    cell.meta.ports[pos]++;
     graph.model.beginUpdate();
     serial++;
     var s = serial;
@@ -511,20 +518,23 @@ function addPort(graph, cell, x, y,pos='l', id, lbl, dir) {
     if(!lbl) {
         lbl = "lbl"+serial;
     }
-    var port = graph.insertVertex(cell, id, null, x, y, 16, 16,
+    var port = graph.insertVertex(cell, id, null, x*cell.meta.ports[pos], y, 16, 16,
         'image=editors/images/rectangle.gif;align=right;imageAlign=right;verticalLabelPosition=bottom;verticalAlign=top', true);
     port.meta={};
-    var lbl = graph.insertVertex(port, id, lbl, x, y, 0, 0,
+    var lbl = graph.insertVertex(port, id, lbl, x*cell.meta.ports[pos], y, 0, 0,
         'align=right;imageAlign=right;resizable=0;dragEnabled=0;', false);
     lbl.meta= {};
     lbl.meta.role = 'lbl';
+    lbl.meta.kind = "port";
+    lbl.meta.class = params.name;
+    //lbl.meta.io = dir;
     lbl.setConnectable(true);
     port.geometry.offset = new mxPoint(-6, -8);
     port.meta.role='port';
     port.meta.position=pos;
-    if(dir) {
+    /*if(dir) {
         port.meta.direction = dir;
-    }
+    }*/
     graph.model.endUpdate();
 }
 
@@ -835,6 +845,7 @@ function handleMetamodelSelect(evt) {
                     _metamodel = Metamodel.parse(reader.result);
                     processToolbox();
                     console.log("metamodel imported");
+                    //console.log(_metamodel);
                 } catch(err) {
                     console.log(err);
                     console.log("Invalid metamodel");
@@ -855,6 +866,7 @@ function processToolbox() {
         }
          
         var kind = _metamodel[name].k;
+        var params = _metamodel[name];
         
         var img;
         if(!label) {
@@ -867,9 +879,9 @@ function processToolbox() {
             img = "images/icons48/sig.png";
         } else if(kind === "port") {
             img = "images/port_out.svg";
-        }      
+        }
 
-        addSidebarIcon(_graph, _sidebar,name,img,label,kind);
+        addSidebarIcon(_graph, _sidebar,name,img,label,kind, params);
     });
 }
 
@@ -1045,7 +1057,7 @@ function showModalWindow(graph, title, content, width, height)
 /**
  * Create sidebar icon
  */
-function addSidebarIcon(graph, sidebar, label, image, id, kind) {
+function addSidebarIcon(graph, sidebar, label, image, id, kind, params) {
     // Function that is executed when the image is dropped on
     // the graph. The cell argument points to the cell under
     // the mousepointer if there is one.
@@ -1072,21 +1084,54 @@ function addSidebarIcon(graph, sidebar, label, image, id, kind) {
         model.beginUpdate();
         if(kind!=='port') {
             try	{
-                v1 = graph.insertVertex(parent, null, label, x-dx, y-dy, 80, 60);
+                v1 = graph.insertVertex(parent, null, label.toLowerCase(), x-dx, y-dy, 80, 60);
                 v1.setConnectable(true); 
                 v1.k = this.id;
                 
                 //TODO: set component label
                 v1.meta={};
                 v1.meta.kind = kind;
+                v1.meta.class = this.id;
                 v1.meta.id = this.id;
+                //additional param
+                console.log("PARAMS");
+                console.log(params);
+
                 console.log("DROPPED " + v1);
                 graph.setSelectionCell(v1);
             } finally {
                 model.endUpdate();
             }       
         }  else {
-            addPort(graph, cell, 0.1, 0, 'l');
+            console.log("ADD PORT");
+            console.log(parent.geometry);
+            var rx = x-parent.geometry.x;
+            var ry = y-parent.geometry.y;
+            
+            var dr = parent.geometry.width - rx;
+            var db = parent.geometry.height - ry; 
+
+            var p = 'l';
+            //console.log("--> " + rx + ", " + ry + "," + dr+","+db);
+            
+            if(ry<rx && ry < dr && ry < db) { //top
+                console.log("TOP");
+                p = 't';
+            } else if(dr < rx && dr < ry && dr < db) { //right
+                console.log("RIGHT");
+                p = 'r';
+            } else if(db < rx && db < ry && db < dr) {
+                p = 'b';
+                console.log("BOTTOM");
+            } else {
+                //console.log("LEFT");
+            }
+
+            //additional param
+            console.log("PARAMS");
+            console.log(params);
+
+            addPort(graph, cell, 0.1, 0, p,"","",params);
             model.endUpdate();
         }
         
@@ -1195,9 +1240,9 @@ function configureStylesheet(graph)
     style[mxConstants.STYLE_ENDARROW] = "none";
 };
 
-
+/*
 function go() {
-    _metamodel = Metamodel.parse("--@container  \nabstract sig Comp { ... } \n--@leaf\nabstract sig Leaf { ... }\n--@port(kind=I/O/IO, from=[OutP, InP], to=[InP],  prop = {color=red, label=Porta}) \nabstract sig InP, OutP { ... }");
+    _metamodel = Metamodel.parse("--@container\nabstract sig Comp { ... } \n\n--@leaf\nabstract sig Leaf { ... }\n\n--@leaf\nabstract sig ALeaf { ... }\n\n--@port(kind=I)\nabstract sig InP, OutP { ... }");
     Object.keys(_metamodel).forEach(name => {
         var label = name;
         if(_metamodel[name].props &&  _metamodel[name].props.label) {
@@ -1225,5 +1270,4 @@ function go() {
         }
         addSidebarIcon(_graph, _sidebar,name,img,label,kind);
     });
-}
-
+}*/
