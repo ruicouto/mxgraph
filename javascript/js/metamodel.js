@@ -52,11 +52,11 @@ class Metamodel {
                     var prs = match[2];
                     props.k = knd;
                     
-                    if(match.length>3) {
+                    if(match.length>2 && prs) {
                         var prs = prs.slice(1,prs.length-1).escape(["{","["],["}","]"],",",";");
                         var prs = prs.escape(["{","["],["}","]"],"=","^");
                         prs.split(",").forEach(p => {
-                            console.log("P>> " + p);
+                            //console.log("P>> " + p);
                             p = p.trim();
                             var k = p.split("=")[0].trim();
                             var v = p.split("=")[1].trim();

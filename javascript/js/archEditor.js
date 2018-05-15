@@ -175,8 +175,8 @@ function main(container, outline, toolbar, sidebar, status) {
         // be used. For example, the first call to addSidebar icon would
         // be as follows:
         // addSidebarIcon(graph, sidebar, 'Website', 'images/icons48/earth.png');
-        addSidebarIcon(graph, sidebar,'Component','images/icons48/sig.png','component','component');
         addSidebarIcon(graph, sidebar,'Container','images/icons48/sig.png','container','container');
+        addSidebarIcon(graph, sidebar,'Component','images/icons48/leaf.png','component','component');
         addSidebarIcon(graph, sidebar,'Port','images/port.svg','port','port');
         
         //addSidebarIcon(graph, sidebar,'Leaf','images/icons48/leaf.svg','leaf');
@@ -280,7 +280,12 @@ function main(container, outline, toolbar, sidebar, status) {
         
         //generate alloy action
         editor.addAction('exportAlloy', function(editor, cell) {
-            exportAlloy(graph);
+            var src = exportAlloy(graph);
+            var textarea = document.createElement('textarea');
+            textarea.style.width = '400px';
+            textarea.style.height = '400px';
+            textarea.value = src;
+            showModalWindow(graph, 'XML', textarea, 410, 440);
         });
         addToolbarButton(editor, toolbar, 'exportAlloy', 'Export to Alloy', 'images/press32.png');
 
@@ -501,7 +506,6 @@ function main(container, outline, toolbar, sidebar, status) {
  * @param {*} lbl 
  */
 function addPort(graph, cell, x, y, pos='l', id, lbl, params) {
-    //console.log(id + ", " + lbl);
     if(!cell.meta.ports) {
         cell.meta.ports = {};
     }
@@ -509,6 +513,7 @@ function addPort(graph, cell, x, y, pos='l', id, lbl, params) {
         cell.meta.ports[pos] = 0;
     }
     cell.meta.ports[pos]++;
+    console.log(cell.meta.ports);
     graph.model.beginUpdate();
     serial++;
     var s = serial;
@@ -516,17 +521,43 @@ function addPort(graph, cell, x, y, pos='l', id, lbl, params) {
         id = "port"+serial;
     }
     if(!lbl) {
-        lbl = "lbl"+serial;
+        lbl = "p"+serial;
     }
-    var port = graph.insertVertex(cell, id, null, x*cell.meta.ports[pos], y, 16, 16,
-        'image=editors/images/rectangle.gif;align=right;imageAlign=right;verticalLabelPosition=bottom;verticalAlign=top', true);
+
+    if(pos == 't') {
+        y = 0;
+    } else if(pos == 'r') {
+        x = 1;
+    } else if(pos == 'b') {
+        y = 1;
+    } else if(pos == 'l') {
+        x = 0;
+    }
+
+    //x = x*cell.meta.ports[pos] 
+    console.log(cell);
+    //x = 1-1/cell.meta.ports[pos];
+    var img = 'editors/images/rectangle.gif';
+    if(params) {
+        if(params.kind == 'I') {
+            img = 'images/port_in.svg;shape=image';
+        } else if(params.kind == 'O') {
+            img = 'images/port_out.svg;shape=image';
+        }
+    }
+
+
+    var port = graph.insertVertex(cell, id, null, x, y, 16, 16,'image='+img+';align=right;imageAlign=right;verticalLabelPosition=bottom;verticalAlign=top', true);
     port.meta={};
     var lbl = graph.insertVertex(port, id, lbl, x*cell.meta.ports[pos], y, 0, 0,
         'align=right;imageAlign=right;resizable=0;dragEnabled=0;', false);
     lbl.meta= {};
     lbl.meta.role = 'lbl';
     lbl.meta.kind = "port";
-    lbl.meta.class = params.name;
+    if(params && params.name) {
+        lbl.meta.class = params.name;    
+    }
+    
     //lbl.meta.io = dir;
     lbl.setConnectable(true);
     port.geometry.offset = new mxPoint(-6, -8);
@@ -535,6 +566,40 @@ function addPort(graph, cell, x, y, pos='l', id, lbl, params) {
     /*if(dir) {
         port.meta.direction = dir;
     }*/
+
+    //spaces
+    var spt = 0.9/ (cell.children.filter(c=>c.meta.position === 't').length+0.1);
+    var spb = 0.9/ (cell.children.filter(c=>c.meta.position === 'b').length+0.1);
+    var spl = 0.9/ (cell.children.filter(c=>c.meta.position === 'l').length+0.1);
+    var spr = 0.9/ (cell.children.filter(c=>c.meta.position === 'r').length+0.1);
+
+    //deltas
+    var dt = 0.1; 
+    var db = 0.1;
+    var dl = 0.1;
+    var dr = 0.1;
+
+    
+    cell.children.forEach(c=> {
+        if(c.meta.position==='t') {
+            c.geometry.x = dt;
+            dt += spt;
+        } else if(c.meta.position==='r') {
+            c.geometry.y = dr;
+            dr += spr;
+        } else if(c.meta.position==='b') {
+            c.geometry.x = db;
+            db += spb;
+        } else if(c.meta.position==='l') {
+            c.geometry.y = dl;
+            dl += spl;
+        } 
+        
+        graph.getView().clear(c, false, false);
+    });
+    
+    graph.getView().validate();
+
     graph.model.endUpdate();
 }
 
@@ -859,6 +924,7 @@ function handleMetamodelSelect(evt) {
 
 
 function processToolbox() {    
+    _sidebar.innerHTML = "";
     Object.keys(_metamodel).forEach(name => {
         var label = name;
         if(_metamodel[name].props &&  _metamodel[name].props.label) {
@@ -1020,7 +1086,7 @@ function buildModel(json) {
  * @param {*} content 
  * @param {*} width 
  * @param {*} height 
- *
+ */
 function showModalWindow(graph, title, content, width, height)
 {
     var background = document.createElement('div');
@@ -1052,7 +1118,7 @@ function showModalWindow(graph, title, content, width, height)
     graph.setEnabled(false);
     graph.tooltipHandler.hide();
     wnd.setVisible(true);
-};*/
+};
 
 /**
  * Create sidebar icon
@@ -1093,45 +1159,48 @@ function addSidebarIcon(graph, sidebar, label, image, id, kind, params) {
                 v1.meta.kind = kind;
                 v1.meta.class = this.id;
                 v1.meta.id = this.id;
+                v1.meta.ports = {};//use meta.ports to handle ports
                 //additional param
-                console.log("PARAMS");
-                console.log(params);
 
-                console.log("DROPPED " + v1);
                 graph.setSelectionCell(v1);
             } finally {
                 model.endUpdate();
             }       
         }  else {
-            console.log("ADD PORT");
-            console.log(parent.geometry);
-            var rx = x-parent.geometry.x;
-            var ry = y-parent.geometry.y;
-            
-            var dr = parent.geometry.width - rx;
-            var db = parent.geometry.height - ry; 
-
-            var p = 'l';
-            //console.log("--> " + rx + ", " + ry + "," + dr+","+db);
-            
-            if(ry<rx && ry < dr && ry < db) { //top
-                console.log("TOP");
-                p = 't';
-            } else if(dr < rx && dr < ry && dr < db) { //right
-                console.log("RIGHT");
-                p = 'r';
-            } else if(db < rx && db < ry && db < dr) {
-                p = 'b';
-                console.log("BOTTOM");
-            } else {
-                //console.log("LEFT");
-            }
-
-            //additional param
-            console.log("PARAMS");
+            console.log("ADD PORT ");
             console.log(params);
-
-            addPort(graph, cell, 0.1, 0, p,"","",params);
+            
+            //bug: in recursive children, parent is the outermost element. This is confusing port location
+            if(parent && parent.geometry) {
+                console.log(parent.geometry);
+                var rx = x-parent.geometry.x;
+                var ry = y-parent.geometry.y;
+                
+                var dr = parent.geometry.width - rx;
+                var db = parent.geometry.height - ry; 
+    
+                var p = 'l';
+                console.log("--> " + rx + ", " + ry + "," + dr+","+db);
+                
+                if(ry<rx && ry < dr && ry < db) { //top
+                    console.log("TOP");
+                    p = 't';
+                } else if(dr < rx && dr < ry && dr < db) { //right
+                    console.log("RIGHT");
+                    p = 'r';
+                } else if(db < rx && db < ry && db < dr) {
+                    p = 'b';
+                    console.log("BOTTOM");
+                } else {
+                    //console.log("LEFT");
+                }
+    
+                //additional param
+                console.log("PARAMS");
+                console.log(params);
+    
+                addPort(graph, cell, 0.1, 0, p,"","",params);
+            }            
             model.endUpdate();
         }
         
@@ -1145,6 +1214,11 @@ function addSidebarIcon(graph, sidebar, label, image, id, kind, params) {
     img.style.height = '32px';
     img.title = 'Drag this to the diagram to create a new vertex';
     sidebar.appendChild(img);
+
+    var p = document.createElement('p');
+    p.innerHTML = id;
+    p.style.fontSize = "10px";
+    sidebar.appendChild(p);
     
     var dragElt = document.createElement('div');
     dragElt.style.border = 'dashed gray 1px';
@@ -1156,6 +1230,9 @@ function addSidebarIcon(graph, sidebar, label, image, id, kind, params) {
     ds.id=id;
     ds.setGuidesEnabled(true);
 };
+
+
+
 
 /**
  * Configure styles
