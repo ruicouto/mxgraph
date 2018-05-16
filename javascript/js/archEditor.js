@@ -212,7 +212,7 @@ function main(container, outline, toolbar, sidebar, status) {
         spacer.style.display = 'inline';
         spacer.style.padding = '8px';
         
-        addToolbarButton(editor, toolbar, 'groupOrUngroup', '(Un)group', 'images/group.png');
+        addToolbarButton(editor, toolbar, 'groupOrUngroup', '(Un)group', 'object-group');
         
         /*
         // Defines a new action for deleting or ungrouping
@@ -225,29 +225,29 @@ function main(container, outline, toolbar, sidebar, status) {
             }
         });*/
 
-        addToolbarButton(editor, toolbar, 'delete', 'Delete', 'images/delete2.png');
+        addToolbarButton(editor, toolbar, 'delete', 'Delete', 'eraser');
         
         toolbar.appendChild(spacer.cloneNode(true));
         
-        addToolbarButton(editor, toolbar, 'cut', 'Cut', 'images/cut.png');
-        addToolbarButton(editor, toolbar, 'copy', 'Copy', 'images/copy.png');
-        addToolbarButton(editor, toolbar, 'paste', 'Paste', 'images/paste.png');
+        addToolbarButton(editor, toolbar, 'cut', 'Cut', 'cut');
+        addToolbarButton(editor, toolbar, 'copy', 'Copy', 'copy');
+        addToolbarButton(editor, toolbar, 'paste', 'Paste', 'paste');
 
         toolbar.appendChild(spacer.cloneNode(true));
         
-        addToolbarButton(editor, toolbar, 'undo', '', 'images/undo.png');
-        addToolbarButton(editor, toolbar, 'redo', '', 'images/redo.png');
+        addToolbarButton(editor, toolbar, 'undo', '', 'undo');
+        addToolbarButton(editor, toolbar, 'redo', '', 'redo');
         
         toolbar.appendChild(spacer.cloneNode(true));
         
-        addToolbarButton(editor, toolbar, 'show', 'Show', 'images/camera.png');
-        addToolbarButton(editor, toolbar, 'print', 'Print', 'images/printer.png');
+        addToolbarButton(editor, toolbar, 'show', 'Show', 'camera-retro');
+        addToolbarButton(editor, toolbar, 'print', 'Print', 'print');
         
         toolbar.appendChild(spacer.cloneNode(true));
 
         //Define the export action
         editor.addAction('export', exportToJson);
-        addToolbarButton(editor, toolbar, 'export', 'Save', 'images/disk.png');
+        addToolbarButton(editor, toolbar, 'export', 'Save', 'save');
 
         toolbar.appendChild(spacer.cloneNode(true));
 
@@ -261,7 +261,7 @@ function main(container, outline, toolbar, sidebar, status) {
                elem.dispatchEvent(evt);
             }
         });
-        addToolbarButton(editor, toolbar, 'import_m', 'Open Metamodel', 'images/folder_palette.png');
+        addToolbarButton(editor, toolbar, 'import_m', 'Open Metamodel', 'arrow-circle-up');
 
         //Define import model action
         document.getElementById('files').addEventListener('change', handleFileSelect, false);
@@ -276,7 +276,7 @@ function main(container, outline, toolbar, sidebar, status) {
                 }
             }  
         });
-        addToolbarButton(editor, toolbar, 'import', 'Open model', 'images/folder.png');
+        addToolbarButton(editor, toolbar, 'import', 'Open model', 'arrow-circle-up');
         
         //generate alloy action
         editor.addAction('exportAlloy', function(editor, cell) {
@@ -287,8 +287,33 @@ function main(container, outline, toolbar, sidebar, status) {
             textarea.value = src;
             showModalWindow(graph, 'XML', textarea, 410, 440);
         });
-        addToolbarButton(editor, toolbar, 'exportAlloy', 'Export to Alloy', 'images/press32.png');
+        addToolbarButton(editor, toolbar, 'exportAlloy', 'Export to Alloy', 'cogs');
 
+        //status.appendChild(spacer.cloneNode(true));
+        
+        /*var a = document.createElement('a');
+        a.style.cssText = 'margin-left:20px;margin-top:10px;text-decoration:none;color: #EEE;';
+        var linkText = document.createTextNode("Sample metamodel");
+        var i = document.createElement('i');
+        i.className="fas fa-download";
+        a.append(i);
+        a.appendChild(linkText);
+        a.title = "Sample metamodel";
+        a.href = "sample.zip";
+        toolbar.appendChild(a);*/
+
+
+        var a = document.createElement('a');
+        a.style.cssText = 'margin-left:20px;margin-top:10px;text-decoration:none;color: #EEE;';
+        var linkText = document.createTextNode("About");
+        var i = document.createElement('i');
+        i.className="fas fa-info";
+        a.append(i);
+        a.appendChild(linkText);
+        a.title = "About";
+        a.href = "about.html";
+
+        toolbar.appendChild(a);
 
         // Adds toolbar buttons into the status bar at the bottom
         // of the window.
@@ -715,16 +740,20 @@ function processOverlay(cell, graph) {
  */
 function addToolbarButton(editor, toolbar, action, label, image, isTransparent)
 {
-    var button = document.createElement('button');
-    button.style.fontSize = '10';
+    var button = document.createElement('a');
+    button.style.fontSize = '16';
     if (image != null) {
-        var img = document.createElement('img');
+        /*var img = document.createElement('img');
         img.setAttribute('src', image);
         img.style.width = '16px';
         img.style.height = '16px';
         img.style.verticalAlign = 'middle';
         img.style.marginRight = '2px';
-        button.appendChild(img);
+        button.appendChild(img);*/
+
+        var i = document.createElement('i');
+        i.innerHTML="<i class=\"fas fa-"+image+"\"></i>";
+        button.appendChild(i);
     }
     if (isTransparent) {
         button.style.background = 'transparent';
@@ -1217,7 +1246,7 @@ function addSidebarIcon(graph, sidebar, label, image, id, kind, params) {
 
     var p = document.createElement('p');
     p.innerHTML = id;
-    p.style.fontSize = "10px";
+    
     sidebar.appendChild(p);
     
     var dragElt = document.createElement('div');
