@@ -6,6 +6,7 @@
     left:0px;
     right:0px;
     padding:1.2em;
+    font-size: 1em;
     
     /*padding:6px;*/
     /*background-image:url('images/toolbar_bg.gif');*/
@@ -21,14 +22,29 @@
     border-left:1px solid gray;
 }
 
+#sidebar {
+    background:rgb(247, 247, 247);
+    position: absolute;
+    left: 0;
+    top: 5em;
+    padding-top:2em;
+    padding-bottom:2em;
+    font-size: 0.5em;
+    height:3em;
+    max-width:56px;
+    width:56px;
+    border-right:1px solid gray;
+    text-align: center;
+}
 
 #sidebarContainer {
+    border-top: 1px solid #EEE;
     position:absolute;overflow:hidden;
-    top:3.5em;
+    top:6em;
     left:0px;
     bottom:40px;
     max-width:52px;width:56px;
-    padding-top:10px;
+    padding-top:5px;
     text-align: center;
     padding-left:4px;/*background-image:url('images/sidebar_bg.gif');*/
     background:rgb(247, 247, 247);

@@ -9,9 +9,6 @@
 <head>
 	<title>Editor</title>
 	<style type="text/css" media="screen">
-		BODY {
-			font-family: Arial;
-		}
 		H1 {
 			font-size: 18px;
 		}
@@ -30,6 +27,7 @@
 	<script type="text/javascript" src="src/js/mxClient.js"></script>
 	<script type="text/javascript" src="js/metamodel.js"></script>
 	<script type="text/javascript" src="js/alloyExporter.js"></script>
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
 	<script type="text/javascript" src="js/archEditor.js"></script>
 
 	<link rel="stylesheet" type="text/css" href="css/main.css">
@@ -61,8 +59,13 @@
 	</div>
 	
 	<!-- Creates a container for the sidebar -->
+	<div id="sidebar">
+		<p id="metamodel-name">(Default)</p>
+	</div>
 	<div id="toolbarContainer">
 	</div>
+	
+	
 
 	<!-- Creates a container for the toolboox -->
 	<div id="sidebarContainer">
