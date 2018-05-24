@@ -538,8 +538,8 @@ function addPort(graph, cell, x, y, pos='l', id, lbl, params) {
         cell.meta.ports[pos] = 0;
     }
     cell.meta.ports[pos]++;
-    console.log(cell.meta.ports);
-    graph.model.beginUpdate();
+    
+    //graph.model.beginUpdate();
     serial++;
     var s = serial;
     var rotation = 0;
@@ -563,8 +563,10 @@ function addPort(graph, cell, x, y, pos='l', id, lbl, params) {
         rotation="180";
     }
 
+    //....
+
     //x = x*cell.meta.ports[pos] 
-    console.log(cell);
+    //console.log(cell);
     //x = 1-1/cell.meta.ports[pos];
     var img = 'editors/images/rectangle.gif';
     if(params) {
@@ -591,52 +593,19 @@ function addPort(graph, cell, x, y, pos='l', id, lbl, params) {
     port.geometry.offset = new mxPoint(-6, -8);
     port.meta.role='port';
     port.meta.position=pos;
-    /*if(dir) {
-        port.meta.direction = dir;
-    }*/
-/*
-    //spaces
-    var spt = 0.9/ (cell.children.filter(c=> c.meta && c.meta.position === 't').length+0.1);
-    var spb = 0.9/ (cell.children.filter(c=> c.meta && c.meta.position === 'b').length+0.1);
-    var spl = 0.9/ (cell.children.filter(c=> c.meta && c.meta.position === 'l').length+0.1);
-    var spr = 0.9/ (cell.children.filter(c=> c.meta && c.meta.position === 'r').length+0.1);
 
-    //deltas
-    var dt = 0.1; 
-    var db = 0.1;
-    var dl = 0.1;
-    var dr = 0.1;
+    //graph.getView().validate();
 
-    
-    cell.children.forEach(c=> {
-        if(c.meta.position==='t') {
-            c.geometry.x = dt;
-            dt += spt;
-        } else if(c.meta.position==='r') {
-            c.geometry.y = dr;
-            dr += spr;
-        } else if(c.meta.position==='b') {
-            c.geometry.x = db;
-            db += spb;
-        } else if(c.meta.position==='l') {
-            c.geometry.y = dl;
-            dl += spl;
-        } 
-        
-        graph.getView().clear(c, false, false);
-    });
-    */
-    graph.getView().validate();
-
-    graph.model.endUpdate();
+    //graph.model.endUpdate();
 
     updateComponentPorts(graph, cell);
 }
 
 
+
+
 function updateComponentPorts(graph, cell) {
     graph.model.beginUpdate();
-    alert("hello");
     //spaces
     var spt = 0.9/ (cell.children.filter(c=> c.meta && c.meta.position === 't').length+0.1);
     var spb = 0.9/ (cell.children.filter(c=> c.meta && c.meta.position === 'b').length+0.1);
@@ -667,7 +636,6 @@ function updateComponentPorts(graph, cell) {
             c.geometry.x = 0;
             dl += spl;
         } 
-        
         graph.getView().clear(c, false, false);
     });
     
@@ -691,27 +659,20 @@ function createPopupMenu(graph, menu, cell, evt) {
     if (cell != null) {
         if(cell.meta.role && cell.meta.role === 'port') {
             menu.addItem('To top', 'images/up.png', function() {
-                /*cell.meta.direction='input';
-                graph.getView().clear(cell, false, false);
-                graph.getView().validate();*/
+                cell.meta.position='t';
+                updateComponentPorts(graph, cell.parent);
             });
             menu.addItem('To right', 'images/right.png', function() {
-                /*cell.meta.direction='input';
-                graph.getView().clear(cell, false, false);
-                graph.getView().validate();*/
+                cell.meta.position='r';
+                updateComponentPorts(graph, cell.parent);
             });
             menu.addItem('To bottom', 'images/down.png', function() {
-                /*cell.meta.direction='input';
-                graph.getView().clear(cell, false, false);
-                graph.getView().validate();*/
+                cell.meta.position='b';
+                updateComponentPorts(graph, cell.parent);
             });
             menu.addItem('To left', 'images/left.png', function() {
                 cell.meta.position='l';
-                
-                graph.getView().clear(cell, false, false);
-                updateComponentPorts(graph, cell);
-                graph.getView().validate();
-                
+                updateComponentPorts(graph, cell.parent);
             });
             /*menu.addItem('Output', 'images/application_put.png', function() {
                 cell.meta.direction='output';
