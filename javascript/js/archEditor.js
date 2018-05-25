@@ -212,7 +212,7 @@ function main(container, outline, toolbar, sidebar, status) {
         spacer.style.display = 'inline';
         spacer.style.padding = '8px';
         
-        addToolbarButton(editor, toolbar, 'groupOrUngroup', '(Un)group', 'object-group');
+        //addToolbarButton(editor, toolbar, 'groupOrUngroup', '(Un)group', 'object-group');
         
         /*
         // Defines a new action for deleting or ungrouping
@@ -225,29 +225,40 @@ function main(container, outline, toolbar, sidebar, status) {
             }
         });*/
 
-        addToolbarButton(editor, toolbar, 'delete', 'Delete', 'eraser');
-        
         toolbar.appendChild(spacer.cloneNode(true));
+
+        addToolbarButton(editor, toolbar, 'export', 'Save', 'save');
+        addToolbarButton(editor, toolbar, 'import', 'Open', 'folder-open');
+        addToolbarButton(editor, toolbar, 'import_m', 'Open Metamodel', 'arrow-circle-up');
         
-        addToolbarButton(editor, toolbar, 'cut', 'Cut', 'cut');
-        addToolbarButton(editor, toolbar, 'copy', 'Copy', 'copy');
-        addToolbarButton(editor, toolbar, 'paste', 'Paste', 'paste');
 
         toolbar.appendChild(spacer.cloneNode(true));
-        
+
         addToolbarButton(editor, toolbar, 'undo', '', 'undo');
         addToolbarButton(editor, toolbar, 'redo', '', 'redo');
+
+        
+        
+        toolbar.appendChild(spacer.cloneNode(true));
+        
+        addToolbarButton(editor, toolbar, 'cut', '', 'cut');
+        addToolbarButton(editor, toolbar, 'copy', '', 'copy');
+        addToolbarButton(editor, toolbar, 'paste', '', 'paste');
+
+        //addToolbarButton(editor, toolbar, 'delete', 'Delete', 'eraser');
+                
+        
         
         toolbar.appendChild(spacer.cloneNode(true));
         
         addToolbarButton(editor, toolbar, 'show', 'Show', 'camera-retro');
         addToolbarButton(editor, toolbar, 'print', 'Print', 'print');
         
-        toolbar.appendChild(spacer.cloneNode(true));
+        
 
         //Define the export action
         editor.addAction('export', exportToJson);
-        addToolbarButton(editor, toolbar, 'export', 'Save', 'save');
+        
 
         toolbar.appendChild(spacer.cloneNode(true));
 
@@ -261,7 +272,7 @@ function main(container, outline, toolbar, sidebar, status) {
                elem.dispatchEvent(evt);
             }
         });
-        addToolbarButton(editor, toolbar, 'import_m', 'Open Metamodel', 'arrow-circle-up');
+        
 
         //Define import model action
         document.getElementById('files').addEventListener('change', handleFileSelect, false);
@@ -276,7 +287,7 @@ function main(container, outline, toolbar, sidebar, status) {
                 }
             }  
         });
-        addToolbarButton(editor, toolbar, 'import', 'Open model', 'arrow-circle-up');
+        
         
         //generate alloy action
         editor.addAction('exportAlloy', function(editor, cell) {
@@ -288,6 +299,8 @@ function main(container, outline, toolbar, sidebar, status) {
             showModalWindow(graph, 'XML', textarea, 410, 440);
         });
         addToolbarButton(editor, toolbar, 'exportAlloy', 'Export to Alloy', 'cogs');
+
+        toolbar.appendChild(spacer.cloneNode(true));
 
         //status.appendChild(spacer.cloneNode(true));
         
@@ -304,7 +317,7 @@ function main(container, outline, toolbar, sidebar, status) {
 
 
         var a = document.createElement('a');
-        a.style.cssText = 'margin-left:20px;margin-top:10px;text-decoration:none;color: #EEE;';
+        a.style.cssText = 'margin-left:20px;margin-top:10px;text-decoration:none;';
         var linkText = document.createTextNode("About");
         var i = document.createElement('i');
         i.className="fas fa-info";
@@ -317,20 +330,20 @@ function main(container, outline, toolbar, sidebar, status) {
 
         // Adds toolbar buttons into the status bar at the bottom
         // of the window.
-        addToolbarButton(editor, status, 'collapseAll', 'Collapse All', 'images/navigate_minus.png', true);
-        addToolbarButton(editor, status, 'expandAll', 'Expand All', 'images/navigate_plus.png', true);
+        addToolbarButton(editor, status, 'collapseAll', ' (collapse)', 'compress', true);
+        addToolbarButton(editor, status, 'expandAll', ' (expand)', 'expand', true);
 
         status.appendChild(spacer.cloneNode(true));
         
-        addToolbarButton(editor, status, 'enterGroup', 'Enter', 'images/view_next.png', true);
-        addToolbarButton(editor, status, 'exitGroup', 'Exit', 'images/view_previous.png', true);
+        addToolbarButton(editor, status, 'enterGroup', ' (enter)', 'sign-in-alt', true);
+        addToolbarButton(editor, status, 'exitGroup', ' (exit)', 'sign-out-alt', true);
 
         status.appendChild(spacer.cloneNode(true));
 
-        addToolbarButton(editor, status, 'zoomIn', '', 'images/zoom_in.png', true);
-        addToolbarButton(editor, status, 'zoomOut', '', 'images/zoom_out.png', true);
-        addToolbarButton(editor, status, 'actualSize', '', 'images/view_1_1.png', true);
-        addToolbarButton(editor, status, 'fit', '', 'images/fit_to_size.png', true);
+        addToolbarButton(editor, status, 'zoomIn', ' (zoom in)', 'search-plus', true);
+        addToolbarButton(editor, status, 'zoomOut', ' (zoom out)', 'search-minus', true);
+        addToolbarButton(editor, status, 'actualSize', ' (1:1)', 'ruler-combined', true);
+        addToolbarButton(editor, status, 'fit', ' (fit)', 'expand-arrows-alt', true);
         
         // Creates the outline (navigator, overview) for moving
         // around the graph in the top, right corner of the window.
@@ -445,19 +458,19 @@ function main(container, outline, toolbar, sidebar, status) {
                     //draw port input/output image
                     if(cell.meta.direction) {
                         if(cell.meta.direction === 'I') {
-                            style+=";shape=image;image=images/port_in.svg;";
+                            //style+=";shape=image;image=images/port_in.svg;";
                         } 
                         if(cell.meta.direction === 'O') {
-                            style+=";shape=image;image=images/port_out.svg;";
+                            //style+=";shape=image;image=images/port_out.svg;";
                         }
 
-                        if(cell.meta.position==='b') {
+                        /*if(cell.meta.position==='b') {
                             style+=";rotation=90";
                         } else if(cell.meta.position==='l') {
                             style+=";rotation=180";
                         } else if(cell.meta.position==='t') {
                             style+=";rotation=-90";
-                        }
+                        }*/
                     }
                 }
             }
@@ -586,13 +599,18 @@ function addPort(graph, cell, x, y, pos='l', id, lbl, params) {
     lbl.meta.kind = "port";
     if(params && params.name) {
         lbl.meta.class = params.name;    
+        if(params.kind) {
+            cell.meta.iokind = params.kind;
+        }
     }
-    
+
     //lbl.meta.io = dir;
     lbl.setConnectable(true);
     port.geometry.offset = new mxPoint(-6, -8);
     port.meta.role='port';
     port.meta.position=pos;
+    
+    
 
     //graph.getView().validate();
 
@@ -783,9 +801,9 @@ function addToolbarButton(editor, toolbar, action, label, image, isTransparent)
         button.appendChild(i);
     }
     if (isTransparent) {
-        button.style.background = 'transparent';
-        button.style.color = '#FFFFFF';
-        button.style.border = 'none';
+        //button.style.background = 'transparent';
+        //button.style.color = '#FFFFFF';
+        //button.style.border = 'none';
     }
     mxEvent.addListener(button, 'click', function(evt) {
         editor.execute(action);
@@ -841,8 +859,14 @@ function exportToJson(editor, cell) {
                 if(tcell.meta.specification) {
                     s.specification = tcell.meta.specification;
                 }
-                if(tcell.meta.kind) {
-                    s.kind = tcell.meta.kind;
+                if(tcell.meta.iokind) {
+                    s.iokind = tcell.meta.iokind;
+                }
+                if(tcell.meta.class) {
+                    s.class = tcell.meta.class;
+                }
+                if(tcell.meta.direction) {
+                    s.direction = tcell.meta.direction;
                 }
             }
 
@@ -1058,6 +1082,7 @@ function processCell(states, cell, parent) {
         return;
     }
     if(cell.role && cell.role==='port') {
+        //component.meta.class
         if(parent) {
             initCellPorts(cell);
             if(cell.position==='l') {
@@ -1099,6 +1124,19 @@ function processCell(states, cell, parent) {
     if(cell.kind && v1) {
         v1.k = cell.kind;
         v1.meta.kind = cell.kind;
+    }
+    
+    if(cell.iokind && v1) {
+        v1.meta.iokind = cell.iokind;
+    }
+
+
+    if(cell.class && v1) {
+        v1.meta.class=cell.class;
+    }
+
+    if(cell.direction && v1) {
+        v1.meta.direction=cell.direction;
     }
 
     if(cell.role && v1) {

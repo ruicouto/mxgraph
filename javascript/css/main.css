@@ -17,6 +17,7 @@
 #toolbarContainer a {
     cursor: pointer;
     margin-right: 0.5em;
+    color: white;
 }
 #toolbarContainer div {
     border-left:1px solid gray;
@@ -89,4 +90,19 @@ body {
     padding:0.7em;
     text-decoration: none;
 
+}
+
+
+#statusContainer div {
+    color: #333;
+}
+
+#statusContainer a {
+    color: #333;
+    border: 1px solid darkgray;
+    margin-right:0.2em;
+    border-radius:0.3em;
+    background-color: white;
+    padding:0.1em;
+    padding-left:0.2em;
 }
