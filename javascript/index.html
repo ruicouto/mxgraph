@@ -7,16 +7,7 @@
 -->
 <html>
 <head>
-	<title>Editor</title>
-	<style type="text/css" media="screen">
-		H1 {
-			font-size: 18px;
-		}
-		H2 {
-			font-size: 16px;
-		}
-	</style>
-
+	<title>Arched</title>
 	<!-- Sets the basepath for the library if not in same directory -->
 	<script type="text/javascript">
 		mxBasePath = 'src';
@@ -25,8 +16,9 @@
 	<!-- Loads and initializes the library -->
 	<script type="text/javascript" src="js/short.js"></script>
 	<script type="text/javascript" src="src/js/mxClient.js"></script>
+	<script type="text/javascript" src="js/mxInit.js"></script>
 	<script type="text/javascript" src="js/metamodel.js"></script>
-	<script type="text/javascript" src="js/alloyExporter.js"></script>
+	<script type="text/javascript" src="js/archedIO.js"></script>
 	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
 	<script type="text/javascript" src="js/archEditor.js"></script>
 
@@ -38,9 +30,9 @@
 
 <!-- hidden fields -->
 <a id="downloadAnchorElem" style="display:none"></a>
-<input type="file" id="files" name="files[]" multiple />
+<input type="file" id="files" name="files[]" accept=".json" multiple />
 
-<input type="file" id="metamodel" name="files[]" multiple />
+<input type="file" id="metamodel" name="files[]" accept=".als" multiple />
 
 <!-- Page passes the container for the graph to the program -->
 <body onload="main(document.getElementById('graphContainer'),
