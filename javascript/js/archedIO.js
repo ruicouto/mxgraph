@@ -1,11 +1,14 @@
 
 var ae_data;
 
-
+/**
+ * Generate Alloy code
+ * @param {*} graph 
+ */
 function exportAlloy(graph) {
     ae_data = {};
     var all = graph.getChildVertices(graph.getDefaultParent());
-    all.forEach(c=> {
+    all.forEach(c => {
         exportAlloyRec(c);
         /*console.log("=");
         console.log(c);*/
@@ -87,7 +90,6 @@ function exportToJson(editor, cell) {
     json.chart.variables=[];
     json.chart.constants=[];
     json.chart.datatypes=[];
-    
     var model = _graph.getModel();
 
     Object.keys(model.cells).forEach(function (k) {
@@ -145,10 +147,10 @@ function exportToJson(editor, cell) {
                     s.direction = tcell.parent.meta.direction;
                 }
             }
-            
+            s.children=[];
             //Check children
             if(tcell.children) {
-                s.children=[];
+                
                 tcell.children.forEach(function (c) {
                     if(c.value) {
                         s.children.push(c.id);
@@ -158,7 +160,41 @@ function exportToJson(editor, cell) {
                     }
                 });
             }
+
+            if(tcell.meta instanceof CellMeta) {
+                if(tcell.children) {
+                    tcell.children.forEach(c=>{
+                        if(c.children && c.children[0]) {
+                            var pc = {};
+                            pc.id = c.children[0].id;
+                            pc.iokind = c.meta.iokind;
+                            pc.class = c.meta.klass;
+                            pc.position = c.meta.position;
+                            pc.label = c.children[0].value;
+                            pc.parent = tcell.id;
+                            if(c.meta instanceof PortMeta) {
+                                pc.kind = "PORT";
+                            }
+                            s.children.push(pc.id);
+                            json.chart.states.push(pc);
+                        }
+                    })
+                }                
+                s.kind = "CELL";
+            }
+
+
+
             
+
+            //a) if is not label
+           /* if() {
+
+            }*/
+            //b) if does not exist yet
+            /*if() {
+
+            }*/
             json.chart.states.push(s);
         }
 
@@ -246,7 +282,7 @@ function processCell(states, cell, parent) {
             addPort(_graph,parent,cell.x,cell.y, cell.position, cell.id, cell.value, par);
         } else {
             return;
-        }        
+        }
     } else {
         if(parent || !cell.parent) {
             var v1 = _graph.insertVertex(parent, cell.id, cell.value, cell.x, cell.y, cell.width, cell.height);

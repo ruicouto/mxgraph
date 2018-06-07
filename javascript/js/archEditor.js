@@ -3,27 +3,17 @@ var _sidebar;
 var _metamodel;
 var serial=0;
 
-/* Cell
- * kind: container/component (leaf)
- *
- *
+/**
+ * 
+ * @param {*} container 
+ * @param {*} outline 
+ * @param {*} toolbar 
+ * @param {*} sidebar 
+ * @param {*} status 
  */
-
-/* Port
- * kind: I/O
- *
- */
-
-
-
-// Program starts here. Creates a sample graph in the
-// DOM node with the specified ID. This function is invoked
-// from the onLoad event handler of the document (see below).
 function main(container, outline, toolbar, sidebar, status) {
     init(container, outline, toolbar, sidebar, status);
-};
-
-
+}
 
 /**
  * Add a port to a cell
@@ -36,17 +26,11 @@ function main(container, outline, toolbar, sidebar, status) {
  * @param {*} lbl 
  */
 function addPort(graph, cell, x, y, pos='l', id, lbl, params) {
-    if(!cell.meta.ports) {
-        cell.meta.ports = {};
-    }
     if(!cell.meta.ports[pos]) {
         cell.meta.ports[pos] = 0;
     }
     cell.meta.ports[pos]++;
-    
-    //graph.model.beginUpdate();
     serial++;
-    var s = serial;
     var rotation = 0;
     if(!id) {
         id = "port"+serial;
@@ -55,24 +39,13 @@ function addPort(graph, cell, x, y, pos='l', id, lbl, params) {
         lbl = "p"+serial;
     }
 
-    if(pos == 't') {
-        rotation="-90";
-        y = 0;
-    } else if(pos == 'r') {
-        x = 1;
-    } else if(pos == 'b') {
-        y = 1;
-        rotation="90";
-    } else if(pos == 'l') {
-        x = 0;
-        rotation="180";
+    switch(pos) {
+        case 't': rotation="-90"; y = 0; break;
+        case 'r': x = 1; break;
+        case 'b': y = 1; rotation="90"; break;
+        case 'l': x = 0; rotation="180"; break;
     }
 
-    //....
-
-    //x = x*cell.meta.ports[pos] 
-    //console.log(cell);
-    //x = 1-1/cell.meta.ports[pos];
     var img = 'editors/images/rectangle.gif';
     if(params) {
         if(params.kind == 'I') {
@@ -83,34 +56,35 @@ function addPort(graph, cell, x, y, pos='l', id, lbl, params) {
     }
 
     var port = graph.insertVertex(cell, id, null, x, y, 16, 16,'image='+img+';align=right;imageAlign=right;verticalLabelPosition=bottom;verticalAlign=top;rotation='+rotation, true);
-    port.meta={};
-    var lbl = graph.insertVertex(port, id, lbl, x*cell.meta.ports[pos], y, 0, 0,
+    port.meta= new PortMeta();
+    port.meta.setPosition(pos);
+
+    var lblv = graph.insertVertex(port, id, lbl, x*cell.meta.ports[pos], y, 0, 0,
         'align=right;imageAlign=right;resizable=0;dragEnabled=0;', false);
-    lbl.meta= {};
-    lbl.meta.role = 'lbl';
-    lbl.meta.kind = "port";
-    
-    if(params && params.name) {
-        lbl.meta.class = params.name;    
+    lblv.meta = new Meta();
+    lblv.meta.role = 'lbl';
+
+    if(params) {
+        if(params.name) {
+            //lblv.meta.klass = params.name;
+            port.meta.klass = params.name;
+        }
+
         if(params.kind) {
-            //port.meta.iokind = params.kind;
-            lbl.meta.iokind = params.kind;
+            //lblv.meta.iokind = params.kind;
+            port.meta.setIOKind(params.kind);
         }
     }
 
-    //lbl.meta.io = dir;
-    lbl.setConnectable(true);
+    lblv.setConnectable(true);
     port.geometry.offset = new mxPoint(-6, -8);
-    port.meta.role='port';
-    port.meta.position=pos;
-    
-    
-
-    //graph.getView().validate();
-
-    //graph.model.endUpdate();
 
     updateComponentPorts(graph, cell);
+}
+
+
+function p() {
+    return _graph.model.cells;
 }
 
 
@@ -131,23 +105,26 @@ function updateComponentPorts(graph, cell) {
     var dr = 0.1;
 
     cell.children.forEach(c=> {
-        if(c.meta.position==='t') {
-            c.geometry.x = dt;
-            c.geometry.y = 0;
-            dt += spt;
-        } else if(c.meta.position==='r') {
-            c.geometry.y = dr;
-            c.geometry.x = 1;
-            dr += spr;
-        } else if(c.meta.position==='b') {
-            c.geometry.x = db;
-            c.geometry.y = 1;
-            db += spb;
-        } else if(c.meta.position==='l') {
-            c.geometry.y = dl;
-            c.geometry.x = 0;
-            dl += spl;
-        } 
+        if(c.meta) {
+            if(c.meta.position==='t') {
+                c.geometry.x = dt;
+                c.geometry.y = 0;
+                dt += spt;
+            } else if(c.meta.position==='r') {
+                c.geometry.y = dr;
+                c.geometry.x = 1;
+                dr += spr;
+            } else if(c.meta.position==='b') {
+                c.geometry.x = db;
+                c.geometry.y = 1;
+                db += spb;
+            } else if(c.meta.position==='l') {
+                c.geometry.y = dl;
+                c.geometry.x = 0;
+                dl += spl;
+            } 
+        }
+        
         graph.getView().clear(c, false, false);
     });
     
@@ -170,7 +147,7 @@ function reset(graph=_graph) {
  */
 function createPopupMenu(graph, menu, cell, evt) {
     if (cell != null) {
-        if(cell.meta.role && cell.meta.role === 'port') {
+        if(cell.meta instanceof PortMeta) {
             menu.addItem('To top', 'images/up.png', function() {
                 cell.meta.position='t';
                 updateComponentPorts(graph, cell.parent);
@@ -310,7 +287,6 @@ function handleFileSelect(evt) {
 
 function handleMetamodelSelect(evt) {
     var files = evt.target.files; // FileList object
-    
         for (var i = 0, f; f = files[i]; i++) {
             $("#metamodel-name").text("("+f.name.split(".")[0]+")");
             var reader = new FileReader();
@@ -331,7 +307,6 @@ function handleMetamodelSelect(evt) {
             }
             reader.readAsText(f, "utf-8");
         }
-    
 }
 
 
@@ -416,7 +391,7 @@ function addSidebarIcon(graph, sidebar, label, image, id, kind, params) {
                 v1.k = this.id;
                 
                 //TODO: set component label
-                v1.meta={};
+                v1.meta= new CellMeta();
                 v1.meta.kind = kind;
                 v1.meta.class = this.id;
                 v1.meta.id = this.id;
