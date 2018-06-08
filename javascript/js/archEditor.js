@@ -69,9 +69,8 @@ function addPort(graph, cell, x, y, pos='l', id, lbl, params) {
             //lblv.meta.klass = params.name;
             port.meta.klass = params.name;
         }
-
         if(params.kind) {
-            //lblv.meta.iokind = params.kind;
+            console.log("SETTING KIND",params);
             port.meta.setIOKind(params.kind);
         }
     }

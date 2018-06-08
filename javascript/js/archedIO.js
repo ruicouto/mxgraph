@@ -66,7 +66,7 @@ function exportAlloyTxt() {
 
 
 /**
- * Export the model to JSON
+ * Export the model to JSON. Can be loaded later.
  * @param {*} editor 
  * @param {*} cell 
  */
@@ -94,7 +94,9 @@ function exportToJson(editor, cell) {
 
     Object.keys(model.cells).forEach(function (k) {
         if(model.cells[k].value && !model.cells[k].edge) {
+
             var tcell = model.cells[k];
+            console.log("Saving ", tcell);
             var s = {};
             s.id=tcell.id;
             if(tcell.parent && tcell.parent.meta && tcell.parent.meta.role && tcell.parent.meta.role==='port') {
@@ -148,9 +150,16 @@ function exportToJson(editor, cell) {
                 }
             }
             s.children=[];
+
             //Check children
             if(tcell.children) {
-                
+                tcell.children.forEach(c=>{
+                    if(c.meta && c.meta instanceof PortMeta) {
+                        s.children.push(c.children[0].id);
+                    }
+                })
+                //console.log("-----");
+
                 tcell.children.forEach(function (c) {
                     if(c.value) {
                         s.children.push(c.id);
@@ -161,40 +170,17 @@ function exportToJson(editor, cell) {
                 });
             }
 
-            if(tcell.meta instanceof CellMeta) {
-                if(tcell.children) {
-                    tcell.children.forEach(c=>{
-                        if(c.children && c.children[0]) {
-                            var pc = {};
-                            pc.id = c.children[0].id;
-                            pc.iokind = c.meta.iokind;
-                            pc.class = c.meta.klass;
-                            pc.position = c.meta.position;
-                            pc.label = c.children[0].value;
-                            pc.parent = tcell.id;
-                            if(c.meta instanceof PortMeta) {
-                                pc.kind = "PORT";
-                            }
-                            s.children.push(pc.id);
-                            json.chart.states.push(pc);
-                        }
-                    })
-                }                
-                s.kind = "CELL";
+            //port cell is ignored, and accessed through label
+            if(tcell.parent && tcell.parent.meta instanceof PortMeta) {
+                s.kind = "port";
+                s.iokind = tcell.parent.meta.iokind;
+                s.klass = tcell.parent.meta.klass;
             }
 
+            if(tcell.meta && tcell.meta instanceof PortMeta) {
+                s.kind = "port";
+            }
 
-
-            
-
-            //a) if is not label
-           /* if() {
-
-            }*/
-            //b) if does not exist yet
-            /*if() {
-
-            }*/
             json.chart.states.push(s);
         }
 
@@ -203,7 +189,7 @@ function exportToJson(editor, cell) {
             var t = {};
             t.id = model.cells[k].id;
             t.name = model.cells[k].value;
-            
+
 
             var s = {};
             s.id = model.cells[k].source.id;
@@ -211,7 +197,7 @@ function exportToJson(editor, cell) {
                 s.id = model.cells[k].source.id;
             }
             t.source = s;
-            
+
             var s = {};
             s.id = model.cells[k].target.id;
             if(model.cells[k].target.meta.role==='port') {
@@ -250,13 +236,16 @@ function exportToJson(editor, cell) {
  * @param {*} parent 
  */
 function processCell(states, cell, parent) {
+    console.log(cell);
     if(!cell || cell.drawn) {
         return;
     }
-    if(cell.role && cell.role==='port') {
+    if(cell.kind ==='port') {
         //component.meta.class
         if(parent) {
             initCellPorts(cell);
+            cell.meta = new PortMeta();
+            //cell.meta.iokind = 
             if(cell.position==='l') {
                 cell.meta.ports_left++;
             }
@@ -277,8 +266,8 @@ function processCell(states, cell, parent) {
             }
             var par = {};
             par.kind = cell.iokind;
-            par.direction = cell.direction;
-
+            par.klass = cell.klass;
+            console.log("->",par);
             addPort(_graph,parent,cell.x,cell.y, cell.position, cell.id, cell.value, par);
         } else {
             return;
@@ -286,7 +275,7 @@ function processCell(states, cell, parent) {
     } else {
         if(parent || !cell.parent) {
             var v1 = _graph.insertVertex(parent, cell.id, cell.value, cell.x, cell.y, cell.width, cell.height);
-            v1.meta = {};
+            v1.meta = new CellMeta();
         } else {
             return;
         }
@@ -338,7 +327,8 @@ function processCell(states, cell, parent) {
 
 
 /**
- * Create the visual representation from an emdl file
+ * Create the visual representation from an emdl file. 
+ * Used to open a model
  * @param {*} json 
  */
 function buildModel(json) {
