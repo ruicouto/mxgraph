@@ -33,7 +33,7 @@ function addPort(graph, cell, x, y, pos='l', id, lbl, params) {
     serial++;
     var rotation = 0;
     if(!id) {
-        id = "port"+serial;
+        id = "p"+serial;
     }
     if(!lbl) {
         lbl = "p"+serial;
@@ -59,10 +59,10 @@ function addPort(graph, cell, x, y, pos='l', id, lbl, params) {
     port.meta= new PortMeta();
     port.meta.setPosition(pos);
 
-    var lblv = graph.insertVertex(port, id, lbl, x*cell.meta.ports[pos], y, 0, 0,
+    /*var lblv = graph.insertVertex(port, id, lbl, x*cell.meta.ports[pos], y, 0, 0,
         'align=right;imageAlign=right;resizable=0;dragEnabled=0;', false);
     lblv.meta = new Meta();
-    lblv.meta.role = 'lbl';
+    lblv.meta.role = 'lbl';*/
 
     if(params) {
         if(params.name) {
@@ -75,7 +75,7 @@ function addPort(graph, cell, x, y, pos='l', id, lbl, params) {
         }
     }
 
-    lblv.setConnectable(true);
+    //lblv.setConnectable(true);
     port.geometry.offset = new mxPoint(-6, -8);
 
     updateComponentPorts(graph, cell);
@@ -89,8 +89,10 @@ function p() {
 
 
 
-function updateComponentPorts(graph, cell) {
-    graph.model.beginUpdate();
+function updateComponentPorts(graph, cell, refresh=false) {
+    if(refresh) {
+        graph.model.beginUpdate();
+    }
     //spaces
     var spt = 0.9/ (cell.children.filter(c=> c.meta && c.meta.position === 't').length+0.1);
     var spb = 0.9/ (cell.children.filter(c=> c.meta && c.meta.position === 'b').length+0.1);
@@ -123,13 +125,13 @@ function updateComponentPorts(graph, cell) {
                 dl += spl;
             } 
         }
-        
         graph.getView().clear(c, false, false);
     });
-    
     graph.getView().validate();
 
-    graph.model.endUpdate();
+    if(refresh) {
+        graph.model.endUpdate();
+    }
 }
 
 
@@ -180,25 +182,6 @@ function createPopupMenu(graph, menu, cell, evt) {
                 graph.model.endUpdate();
             });
         } else {
-            /*initCellPorts(cell);
-            menu.addItem('Add port Top', 'images/up.png', function() {
-                cell.meta.ports_top++;
-                addPort(graph, cell, 0.1 + 0.2*(cell.meta.ports_top-1), 0,'t');
-            });
-            menu.addItem('Add port Right', 'images/right.png', function() {
-                cell.meta.ports_right++;
-                addPort(graph, cell, 1,0.1 + 0.2*(cell.meta.ports_right-1),'r');
-            });
-            menu.addItem('Add port Bottom', 'images/down.png', function() {
-                cell.meta.ports_bottom++;
-                addPort(graph, cell, 0.1 + 0.2*(cell.meta.ports_bottom-1), 1,'b');
-            });
-            menu.addItem('Add port Left', 'images/left.png', function() {
-                cell.meta.ports_left++;
-                addPort(graph, cell, 0, 0.1 + 0.2*(cell.meta.ports_left-1),'l');
-            });
-            menu.addSeparator(); 
-            */        
             menu.addItem('Spec', 'images/edit.png', function() {
                 showSpec(cell, graph);
             });
@@ -407,16 +390,13 @@ function addSidebarIcon(graph, sidebar, label, image, id, kind, params) {
             
             //bug: in recursive children, parent is the outermost element. This is confusing port location
             if(parent && parent.geometry) {
-                console.log(parent.geometry);
                 var rx = x-parent.geometry.x;
                 var ry = y-parent.geometry.y;
-                
                 var dr = parent.geometry.width - rx;
                 var db = parent.geometry.height - ry; 
-    
                 var p = 'l';
                 console.log("--> " + rx + ", " + ry + "," + dr+","+db);
-                
+
                 if(ry<rx && ry < dr && ry < db) { //top
                     console.log("TOP");
                     p = 't';
@@ -437,11 +417,9 @@ function addSidebarIcon(graph, sidebar, label, image, id, kind, params) {
                 addPort(graph, cell, 0.1, 0, p,"","",params);
             }            
             model.endUpdate();
-        }
-        
-        
+        }        
     }
-    
+
     // Creates the image which is used as the sidebar icon (drag source)
     var img = document.createElement('img');
     img.setAttribute('src', image);

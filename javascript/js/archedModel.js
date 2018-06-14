@@ -4,7 +4,7 @@
 class CellMeta {
 
     constructor() {
-        this.id = null;            //id
+        //this.id = null;            //id
         this.ports = [];           //
         this.kind = null;          //kind of element, e.g. container or element
         this.specification = null; //specification
@@ -23,7 +23,7 @@ class CellMeta {
 class PortMeta {
 
     constructor() {
-        this.id = null;       //
+        //this.id = null;       //
         this.iokind = null;   //input or output I/O
         this.position = null; //position: T,R,B,L
         this.label = null;    //label of the port
@@ -44,7 +44,7 @@ class PortMeta {
  */
 class Meta {
     constructor() {
-        this.id; //
+        //this.id; //
         this.role; //role of the component, e.g. Label
     }
 

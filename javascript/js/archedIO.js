@@ -153,12 +153,23 @@ function exportToJson(editor, cell) {
 
             //Check children
             if(tcell.children) {
+                console.log("I'll ignore ", tcell.children);
                 tcell.children.forEach(c=>{
                     if(c.meta && c.meta instanceof PortMeta) {
-                        s.children.push(c.children[0].id);
+                        s.children.push(c.id);
+                        var tport = {};
+                        tport.id = c.id;
+                        tport.x = c.geometry.x;
+                        tport.y = c.geometry.y;
+                        tport.width = c.geometry.width;
+                        tport.height = c.geometry.height;
+                        tport.kind = "port";
+                        tport.class= c.meta.klass;
+                        tport.io = c.meta.iokind;
+                        tport.position = c.meta.position;
+                        json.chart.states.push(tport);
                     }
                 })
-                //console.log("-----");
 
                 tcell.children.forEach(function (c) {
                     if(c.value) {
@@ -169,6 +180,7 @@ function exportToJson(editor, cell) {
                     }
                 });
             }
+
 
             //port cell is ignored, and accessed through label
             if(tcell.parent && tcell.parent.meta instanceof PortMeta) {
@@ -186,24 +198,24 @@ function exportToJson(editor, cell) {
 
         //edges
         if(model.cells[k].edge) {
+            console.log("EDGE ",model.cells[k],model.cells[k].source.meta instanceof PortMeta);
             var t = {};
             t.id = model.cells[k].id;
             t.name = model.cells[k].value;
 
-
             var s = {};
             s.id = model.cells[k].source.id;
-            if(model.cells[k].source.meta.role==='port') {
-                s.id = model.cells[k].source.id;
+            if(model.cells[k].source.meta instanceof PortMeta) {
+                //s.id = model.cells[k].source.children[0].id;//....not ok
             }
             t.source = s;
 
-            var s = {};
+            s = {};
             s.id = model.cells[k].target.id;
-            if(model.cells[k].target.meta.role==='port') {
-                s.id = model.cells[k].target.id;
+            if(model.cells[k].target.meta instanceof PortMeta) {
+                //s.id = model.cells[k].target.children[0].id;
             }
-            t.target = s;					
+            t.target = s;
             json.chart.transitions.push(t);
         }
     });
@@ -243,21 +255,24 @@ function processCell(states, cell, parent) {
     if(cell.kind ==='port') {
         //component.meta.class
         if(parent) {
+            _graph.model.beginUpdate();
+            var x = 0.1;
+            var y = 0;
             initCellPorts(cell);
+            var rotation = "0";
             cell.meta = new PortMeta();
             //cell.meta.iokind = 
-            if(cell.position==='l') {
-                cell.meta.ports_left++;
+            switch(cell.position) {
+                case 'l': cell.meta.ports_left++;x = 0; rotation="180";
+                    break;
+                case 'r': cell.meta.ports_right++;x = 1;
+                    break;
+                case 'b': cell.meta.ports_bottom++; y = 1; rotation="90"; 
+                    break;
+                case 't': cell.meta.ports_top++; rotation="-90"; y = 0;
+                    break;
             }
-            if(cell.position==='r') {
-                cell.meta.ports_right++;
-            }
-            if(cell.position==='b') {
-                cell.meta.ports_bottom++;
-            }
-            if(cell.position==='t') {
-                cell.meta.ports_top++;
-            }
+
             if(cell.iokind) {
                 cell.meta.iokind = cell.iokind;
             }
@@ -267,8 +282,72 @@ function processCell(states, cell, parent) {
             var par = {};
             par.kind = cell.iokind;
             par.klass = cell.klass;
-            console.log("->",par);
-            addPort(_graph,parent,cell.x,cell.y, cell.position, cell.id, cell.value, par);
+            par.name = cell.iokind;
+            par.k = "port";
+            x = cell.x;
+            y = cell.y;
+
+            var img = 'editors/images/rectangle.gif';
+            if(cell.io) {
+                if(cell.io === 'I') {
+                    img = 'images/port_in.svg;shape=image';
+                } else if(cell.io === 'O') {
+                    img = 'images/port_out.svg;shape=image';
+                }
+            }
+
+            var port = _graph.insertVertex(parent, cell.id, null, x, y, 16, 16,'image='+img+';align=right;imageAlign=right;verticalLabelPosition=bottom;verticalAlign=top;rotation='+rotation, true);
+            port.meta = new PortMeta();
+            port.meta.kind="port";
+            port.meta.klass=cell.class;
+            port.meta.iokind=cell.io;
+            port.meta.position = cell.position;
+            port.geometry.offset = new mxPoint(-6, -8);
+            updateComponentPorts(_graph, parent, false);
+
+            _graph.model.endUpdate();
+           
+
+/*
+            var port = graph.insertVertex(cell, id, null, x, y, 16, 16,'image='+img+';align=right;imageAlign=right;verticalLabelPosition=bottom;verticalAlign=top;rotation='+rotation, true);
+            port.meta= new PortMeta();
+            port.meta.setPosition(pos);
+        
+            var lblv = graph.insertVertex(port, id, lbl, x*cell.meta.ports[pos], y, 0, 0,
+                'align=right;imageAlign=right;resizable=0;dragEnabled=0;', false);
+            lblv.meta = new Meta();
+            lblv.meta.role = 'lbl';
+        
+            if(params) {
+                if(params.name) {
+                    //lblv.meta.klass = params.name;
+                    port.meta.klass = params.name;
+                }
+                if(params.kind) {
+                    console.log("SETTING KIND",params);
+                    port.meta.setIOKind(params.kind);
+                }
+            }
+        
+            lblv.setConnectable(true);
+            port.geometry.offset = new mxPoint(-6, -8);
+        
+            updateComponentPorts(graph, cell);
+*/
+
+
+
+
+
+            // --------------- END TODO
+
+
+
+
+
+
+            
+            //addPort(_graph,parent,cell.x,cell.y, cell.position, cell.id, cell.value, par);
         } else {
             return;
         }
@@ -296,7 +375,7 @@ function processCell(states, cell, parent) {
         v1.k = cell.kind;
         v1.meta.kind = cell.kind;
     }
-    
+
     if(cell.iokind && v1) {
         v1.meta.iokind = cell.iokind;
     }
@@ -314,8 +393,6 @@ function processCell(states, cell, parent) {
         v1.r = cell.role;
         v1.meta.role = cell.role;
     }
-    
-    var model = _graph.getModel();
 
     if(cell.children) {
         cell.children.forEach(function (c) {
@@ -342,7 +419,7 @@ function buildModel(json) {
         json.chart.states.forEach(function(f) {
             processCell(json.chart.states, f, null);            
         });
-        
+
         //edges
         json.chart.transitions.forEach(function(t) {
             var sv = model.getCell(t.source.id);
