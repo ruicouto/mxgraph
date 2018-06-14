@@ -220,6 +220,10 @@ function exportToJson(editor, cell) {
         }
     });
 
+    if(_metamodel) {
+        json.metamodel = _metamodel;
+    }
+
     json = JSON.stringify(json);
     console.log(json);
 
@@ -427,6 +431,11 @@ function buildModel(json) {
             var e1 = _graph.insertEdge(parent, t.id, t.value, sv, tv);
         });
         serial = json.descriptor.serial;
+
+        if(json.metamodel) {
+            _metamodel = json.metamodel;
+            processToolbox();
+        }
     }
     finally
     {
