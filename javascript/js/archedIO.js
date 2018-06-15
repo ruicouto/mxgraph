@@ -252,29 +252,23 @@ function exportToJson(editor, cell) {
  * @param {*} parent 
  */
 function processCell(states, cell, parent) {
-    console.log(cell);
     if(!cell || cell.drawn) {
         return;
     }
     if(cell.kind ==='port') {
         //component.meta.class
         if(parent) {
-            _graph.model.beginUpdate();
             var x = 0.1;
             var y = 0;
             initCellPorts(cell);
             var rotation = "0";
             cell.meta = new PortMeta();
-            //cell.meta.iokind = 
+
             switch(cell.position) {
-                case 'l': cell.meta.ports_left++;x = 0; rotation="180";
-                    break;
-                case 'r': cell.meta.ports_right++;x = 1;
-                    break;
-                case 'b': cell.meta.ports_bottom++; y = 1; rotation="90"; 
-                    break;
-                case 't': cell.meta.ports_top++; rotation="-90"; y = 0;
-                    break;
+                case 'l': cell.meta.ports_left++;x = 0; rotation="180"; break;
+                case 'r': cell.meta.ports_right++;x = 1; break;
+                case 'b': cell.meta.ports_bottom++; y = 1; rotation="90"; break;
+                case 't': cell.meta.ports_top++; rotation="-90"; y = 0; break;
             }
 
             if(cell.iokind) {
@@ -300,6 +294,9 @@ function processCell(states, cell, parent) {
                 }
             }
 
+            //BUG: when loading, ports are not represented with images
+            //TODO: labels
+
             var port = _graph.insertVertex(parent, cell.id, null, x, y, 16, 16,'image='+img+';align=right;imageAlign=right;verticalLabelPosition=bottom;verticalAlign=top;rotation='+rotation, true);
             port.meta = new PortMeta();
             port.meta.kind="port";
@@ -307,12 +304,10 @@ function processCell(states, cell, parent) {
             port.meta.iokind=cell.io;
             port.meta.position = cell.position;
             port.geometry.offset = new mxPoint(-6, -8);
-            updateComponentPorts(_graph, parent, false);
+            updateComponentPorts(_graph, parent);
 
-            _graph.model.endUpdate();
-           
 
-/*
+    /* //labels
             var port = graph.insertVertex(cell, id, null, x, y, 16, 16,'image='+img+';align=right;imageAlign=right;verticalLabelPosition=bottom;verticalAlign=top;rotation='+rotation, true);
             port.meta= new PortMeta();
             port.meta.setPosition(pos);
@@ -419,6 +414,10 @@ function buildModel(json) {
     model.beginUpdate();
     //draw all edges
     try {
+        if(json.metamodel) {
+            _metamodel = json.metamodel;
+            processToolbox();
+        }
         //add root vertexes
         json.chart.states.forEach(function(f) {
             processCell(json.chart.states, f, null);            
@@ -432,14 +431,11 @@ function buildModel(json) {
         });
         serial = json.descriptor.serial;
 
-        if(json.metamodel) {
-            _metamodel = json.metamodel;
-            processToolbox();
-        }
+        
     }
     finally
     {
-        model.endUpdate();		
+        model.endUpdate();
     }
 }
 

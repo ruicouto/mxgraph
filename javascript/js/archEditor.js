@@ -89,10 +89,7 @@ function p() {
 
 
 
-function updateComponentPorts(graph, cell, refresh=false) {
-    if(refresh) {
-        graph.model.beginUpdate();
-    }
+function updateComponentPorts(graph, cell) {
     //spaces
     var spt = 0.9/ (cell.children.filter(c=> c.meta && c.meta.position === 't').length+0.1);
     var spb = 0.9/ (cell.children.filter(c=> c.meta && c.meta.position === 'b').length+0.1);
@@ -129,9 +126,6 @@ function updateComponentPorts(graph, cell, refresh=false) {
     });
     graph.getView().validate();
 
-    if(refresh) {
-        graph.model.endUpdate();
-    }
 }
 
 
@@ -409,11 +403,9 @@ function addSidebarIcon(graph, sidebar, label, image, id, kind, params) {
                 } else {
                     //console.log("LEFT");
                 }
-    
                 //additional param
                 console.log("PARAMS");
                 console.log(params);
-    
                 addPort(graph, cell, 0.1, 0, p,"","",params);
             }            
             model.endUpdate();
@@ -432,7 +424,7 @@ function addSidebarIcon(graph, sidebar, label, image, id, kind, params) {
     p.innerHTML = id;
     
     sidebar.appendChild(p);
-    
+
     var dragElt = document.createElement('div');
     dragElt.style.border = 'dashed gray 1px';
     dragElt.style.width = '80px';
