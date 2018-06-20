@@ -434,7 +434,7 @@ function init(container, outline, toolbar, sidebar, status) {
                 if(cell.meta && cell.meta.kind ) {
                     
                     if(cell.meta.kind === 'port') {
-                        style+=";shape=image;image=images/port.svg;";
+                        //style+=";shape=image;image=images/port.svg;";
                     } else if (cell.meta.kind === 'container') {
                         style += ';verticalAlign=top';
                     }

@@ -431,7 +431,6 @@ function buildModel(json) {
         });
         serial = json.descriptor.serial;
 
-        
     }
     finally
     {

@@ -365,7 +365,7 @@ function addSidebarIcon(graph, sidebar, label, image, id, kind, params) {
                 v1 = graph.insertVertex(parent, null, label.toLowerCase(), x-dx, y-dy, 80, 60);
                 v1.setConnectable(true); 
                 v1.k = this.id;
-                
+
                 //TODO: set component label
                 v1.meta= new CellMeta();
                 v1.meta.kind = kind;
@@ -422,7 +422,7 @@ function addSidebarIcon(graph, sidebar, label, image, id, kind, params) {
 
     var p = document.createElement('p');
     p.innerHTML = id;
-    
+
     sidebar.appendChild(p);
 
     var dragElt = document.createElement('div');
