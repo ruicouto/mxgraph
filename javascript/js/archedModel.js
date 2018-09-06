@@ -8,7 +8,7 @@ class CellMeta {
         this.ports = [];           //
         this.kind = null;          //kind of element, e.g. container or element
         this.specification = null; //specification
-        this.klass = null;         //class of the node
+        this.class = "Cell";         //class of the node
     }
 
     setClass(klass) {
@@ -27,6 +27,7 @@ class PortMeta {
         this.iokind = null;   //input or output I/O
         this.position = null; //position: T,R,B,L
         this.label = null;    //label of the port
+        this.class = "Port";
     }
 
     setPosition(position) {

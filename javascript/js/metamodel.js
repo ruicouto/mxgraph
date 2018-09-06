@@ -40,6 +40,7 @@ class Metamodel {
                 var signature = l;
                 var names = [];
                 var name = signature.match(/.* *sig *(.*) *\{.*/)[1].trim();
+                name = name.split(' ')[0];
                 name.split(",").forEach(n=>{
                     names.push(n.trim());
                 });

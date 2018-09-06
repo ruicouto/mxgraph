@@ -22,11 +22,16 @@ function exportAlloy(graph) {
     return src;
 }
 
+
+
 function exportAlloyRec(component) {
-    console.log(component);
+    console.log(">>> ",component);
     if(component.meta) {
         var clss = component.meta.class;
         console.log("CLASS:: " + clss);
+        if(clss==='Port') {
+
+        }
         if(!ae_data[clss] && clss) {
             ae_data[clss] = [];
         }
@@ -42,9 +47,42 @@ function exportAlloyRec(component) {
     }
 }
 
-//TODO: ports
+
+
+//TODO: connections, disjoint ports, subComponents
 function exportAlloyTxt() {
+    preprocess();
     var src = "";
+
+    
+
+    Object.keys(ae_data).forEach(k=>{
+        if(k==='IPort' || k==='OPort') {
+            src += "one sig ";
+            ae_data[k].forEach(e=> {
+                parent = k;
+                src += e.value+", ";
+                console.log(e.meta.kind);
+                console.log(e.meta.io);
+            });
+            src+=" extends "+k+"{}\n";
+        } else {
+            ae_data[k].forEach(e=> {
+                src += "one sig ";
+                parent = k;
+                src += e.value+" ";
+                console.log(e.meta.kind);
+                console.log(e.meta.io);
+                src+=" extends "+k+"{}\n";
+            });
+        }
+        if(k==="Leaf") {
+            
+        } else if(k==="Composite") {
+
+        }
+    });
+
     Object.keys(ae_data).forEach(k=>{
         src += "one sig ";
         ae_data[k].forEach(e=> {
@@ -59,9 +97,26 @@ function exportAlloyTxt() {
         } else if(k==="Composite") {
 
         }
-
     });
     return src;
+}
+
+function preprocess() {
+    var pc=0;
+    if(ae_data['IPort']) {
+        ae_data['IPort'].forEach(p=>{
+            if(!p.value) {
+                p.value='p'+pc++;
+            }
+        });
+    }
+    if(ae_data['OPort']) {
+        ae_data['OPort'].forEach(p=>{
+            if(!p.value) {
+                p.value='p'+pc++;
+            }
+        });
+    }    
 }
 
 
