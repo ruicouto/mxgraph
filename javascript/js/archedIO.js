@@ -49,12 +49,10 @@ function exportAlloyRec(component) {
 
 
 
-//TODO: connections, disjoint ports, subComponents
+//TODO: connections, subComponents
 function exportAlloyTxt() {
     preprocess();
     var src = "";
-
-    
 
     Object.keys(ae_data).forEach(k=>{
         if(k==='IPort' || k==='OPort') {
@@ -73,15 +71,51 @@ function exportAlloyTxt() {
                 src += e.value+" ";
                 console.log(e.meta.kind);
                 console.log(e.meta.io);
-                src+=" extends "+k+"{}\n";
+                src+=" extends "+k+" {";
+
+                if(k==="Leaf" || k==="Composite") {
+                    var pn = 1;
+                    if(ae_data["IPort"]) {
+                        src += "disj "
+                        ae_data["IPort"].filter(p=>p.parent.value===e.value).forEach(p=> {
+                            p.pname = "i"+pn++;
+                            src += p.pname +",";
+                            console.log("PP",p.meta.iokind);
+                        });
+                        src+= " : input, disj "
+                    }
+                    if(ae_data["OPort"]) {
+                        pn=1;
+                        ae_data["OPort"].filter(p=>p.parent.value===e.value).forEach(p=> {
+                            p.pname = "o"+pn++;
+                            src += p.pname +",";
+                            console.log("PP",p.meta.iokind);
+                        });
+                        src += " : output"
+                    }                    
+                }
+                src+="}\n";
+
             });
         }
-        if(k==="Leaf") {
-            
-        } else if(k==="Composite") {
 
+    });
+
+
+
+
+    Object.keys(ae_data).forEach(k=>{
+        if(k==='IPort' || k==='OPort') {
+            ae_data[k].forEach(p=> {
+                p.edges.forEach(e=>{
+                    console.log("E::",e);
+                    console.log("E::",e.target.pname,"->",e.source.pname); //bug in here
+                });
+            });
         }
     });
+
+
 
     Object.keys(ae_data).forEach(k=>{
         src += "one sig ";
