@@ -1,4 +1,3 @@
-
 var ae_data;
 
 /**
@@ -49,67 +48,80 @@ function exportAlloyRec(component) {
 
 
 
-//TODO: connections, subComponents
+
+
+
+/**
+ * Export the diagram to Alloy
+ */
 function exportAlloyTxt() {
+    //apply pre processing
     preprocess();
+
+    //resulting source
     var src = "";
 
+    //alloy model representation
+    var ports = {};
+    var components = {};
+    var connections = new Set();
+    var subComponents = {};
+
+
+    var simpleSigs;
+
     Object.keys(ae_data).forEach(k=>{
-        if(k==='IPort' || k==='OPort') {
-            src += "one sig ";
+        if(k==='IPort' || k==='OPort') { //TODO use metamodel
+            if(!ports[k]) {
+                ports[k] = [];
+            }
             ae_data[k].forEach(e=> {
-                parent = k;
-                src += e.value+", ";
-                console.log(e.meta.kind);
-                console.log(e.meta.io);
+                ports[k].push(e.value);
             });
-            src+=" extends "+k+"{}\n";
         } else {
             ae_data[k].forEach(e=> {
-                src += "one sig ";
-                parent = k;
-                src += e.value+" ";
-                console.log(e.meta.kind);
-                console.log(e.meta.io);
-                src+=" extends "+k+" {";
+
+                if(!components[e.value]) {
+                    components[e.value] = {};
+                }
+
+                components[e.value].extends = k;
+                components[e.value].ports = {};
 
                 if(k==="Leaf" || k==="Composite") {
                     var pn = 1;
                     if(ae_data["IPort"]) {
-                        src += "disj "
                         ae_data["IPort"].filter(p=>p.parent.value===e.value).forEach(p=> {
+                            var pkind = "input";//TODO: use metamodel
+                            if(!components[e.value].ports[pkind]) { 
+                                components[e.value].ports[pkind] = [];
+                            }
                             p.pname = "i"+pn++;
-                            src += p.pname +",";
-                            console.log("PP",p.meta.iokind);
+                            components[e.value].ports[pkind].push(p.pname);
                         });
-                        src+= " : input, disj "
                     }
                     if(ae_data["OPort"]) {
                         pn=1;
                         ae_data["OPort"].filter(p=>p.parent.value===e.value).forEach(p=> {
+                            var pkind = "output";
+                            if(!components[e.value].ports[pkind]) { //TODO: use metamodel
+                                components[e.value].ports[pkind] = [];
+                            }
                             p.pname = "o"+pn++;
-                            src += p.pname +",";
-                            console.log("PP",p.meta.iokind);
+                            components[e.value].ports[pkind ].push(p.pname);
                         });
-                        src += " : output"
                     }                    
                 }
-                src+="}\n";
 
             });
         }
-
     });
-
-
-
 
     Object.keys(ae_data).forEach(k=>{
         if(k==='IPort' || k==='OPort') {
             ae_data[k].forEach(p=> {
                 p.edges.forEach(e=>{
-                    console.log("E::",e);
-                    console.log("E::",e.target.pname,"->",e.source.pname); //bug in here
+                    connections.add(e.source.parent.value+"."+e.source.pname+"->"+e.target.parent.value+"."+e.target.pname);
                 });
             });
         }
@@ -117,21 +129,86 @@ function exportAlloyTxt() {
 
 
 
-    Object.keys(ae_data).forEach(k=>{
-        src += "one sig ";
-        ae_data[k].forEach(e=> {
-            parent = k;
-            src += e.value+", ";
-            console.log(e.meta.kind);
-            console.log(e.meta.io);
-        });
-        src+=" extends "+k+"{}\n";
-        if(k==="Leaf") {
-            
-        } else if(k==="Composite") {
+    
 
+    Object.keys(ae_data).forEach(k=>{
+        if(k==='Leaf' || k==='Composite') {
+            ae_data[k].forEach(p=> {
+                if(p.parent.value) {
+                    console.log(p.value, p.parent.value);
+                    if(!subComponents[p.parent.value]) {
+                        subComponents[p.parent.value] = [];
+                    }
+                    subComponents[p.parent.value].push(p.value);
+                }
+            });
         }
     });
+
+
+    //code generation
+
+    var separator = '';
+    //create ports
+    for(k in ports) {
+        src += "one sig ";
+        ports[k].forEach(p=>{
+            src += separator + p;
+            separator = ', ';
+        });
+        src += " extends "+k+" { }\n";
+    }
+
+    src += "\n";
+
+    //create sigs
+    for(k in components) {
+        var v = components[k];
+        src += "one sig " + k +" extends " +  v.extends + " { ";
+
+        separator = '';
+        for(pk in v.ports) {
+            src += separator + " disj ";
+            src += v.ports[pk].reduce( (a,b) => a+","+b );
+            src += " : " + pk;
+            separator = ', ';
+        }
+        
+        src+="}\n";
+    }
+
+    src += "\n";
+
+    //create connections
+    src += "fact connections {\n";
+    src += "    to = ";
+    separator = '';
+    connections.forEach(v => {
+        src += "    " + separator + v + "\n";
+        separator = "+ ";
+    });
+    src += "}\n";
+
+    src += "\n";
+
+    //create subcomponents
+
+    src += "fact subComponents {\n";
+    separator = '';
+    Object.keys(subComponents).forEach(k=> {
+        src += k+".subs = ";
+        subComponents[k].forEach(c => {
+            src += separator + c;
+            separator = "+ ";
+        })
+    });
+    src += "\n}\n";
+
+
+    //run
+    src += "\n";
+    src+= "run {}"
+
     return src;
 }
 
